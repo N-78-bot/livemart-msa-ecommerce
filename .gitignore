@@ -1,0 +1,23 @@
+﻿# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+
+# Build
+target/
+build/
+out/
+.gradle/
+*.jar
+*.war
+*.class
+
+# Environment
+.env
+*.log
+
+# Kubernetes secrets
+*secret*.yaml
