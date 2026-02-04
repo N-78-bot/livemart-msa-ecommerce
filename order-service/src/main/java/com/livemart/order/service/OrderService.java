@@ -1,16 +1,17 @@
 package com.livemart.order.service;
 
+import com.livemart.order.client.PaymentServiceClient;
 import com.livemart.order.client.ProductServiceClient;
 import com.livemart.order.domain.Order;
 import com.livemart.order.domain.OrderItem;
 import com.livemart.order.domain.OrderStatus;
 import com.livemart.order.dto.*;
 import com.livemart.order.event.OrderEvent;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.livemart.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,71 +21,52 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.Random;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
+@Slf4j
 public class OrderService {
-
     private final OrderRepository orderRepository;
     private final ProductServiceClient productServiceClient;
+    private final PaymentServiceClient paymentServiceClient;
     private final KafkaTemplate<String, OrderEvent> kafkaTemplate;
 
-    private static final String ORDER_TOPIC = "order-events";
-
-    /**
-     * 주문 생성 (Saga Pattern - Orchestration)
-     * 1. 상품 정보 조회
-     * 2. 재고 검증
-     * 3. 주문 생성
-     * 4. 재고 차감
-     * 5. 이벤트 발행
-     */
-    @Transactional
     public OrderResponse createOrder(OrderCreateRequest request) {
-        log.info("Creating order for userId: {}", request.getUserId());
+        Long userId = request.getUserId();
+        log.info("Creating order for userId: {}", userId);
 
-        // Step 1: 상품 정보 조회 및 검증
+        // 1. 상품 정보 조회 및 검증
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
 
         for (OrderItemRequest itemRequest : request.getItems()) {
-            // Product Service 호출 (Circuit Breaker 적용)
-            ProductInfo productInfo = productServiceClient.getProductInfo(itemRequest.getProductId());
+            ProductInfo product = productServiceClient.getProduct(itemRequest.getProductId());
 
-            // 재고 검증
-            if (productInfo.getStockQuantity() < itemRequest.getQuantity()) {
-                throw new IllegalStateException(
-                        String.format("상품 '%s'의 재고가 부족합니다. (요청: %d, 재고: %d)",
-                                productInfo.getName(),
-                                itemRequest.getQuantity(),
-                                productInfo.getStockQuantity())
-                );
+            if (product.getStockQuantity() < itemRequest.getQuantity()) {
+                throw new RuntimeException("재고가 부족합니다: " + product.getName());
             }
 
-            // OrderItem 생성
-            BigDecimal itemTotal = productInfo.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+            BigDecimal itemTotal = product.getPrice().multiply(new BigDecimal(itemRequest.getQuantity()));
+            totalAmount = totalAmount.add(itemTotal);
+
             OrderItem orderItem = OrderItem.builder()
-                    .productId(productInfo.getId())
-                    .productName(productInfo.getName())
-                    .productPrice(productInfo.getPrice())
+                    .productId(product.getId())
+                    .productName(product.getName())
+                    .productPrice(product.getPrice())
                     .quantity(itemRequest.getQuantity())
                     .totalPrice(itemTotal)
                     .build();
 
             orderItems.add(orderItem);
-            totalAmount = totalAmount.add(itemTotal);
         }
 
-        // Step 2: 주문 생성
+        // 2. 주문 생성
         String orderNumber = generateOrderNumber();
-
         Order order = Order.builder()
                 .orderNumber(orderNumber)
-                .userId(request.getUserId())
+                .userId(userId)
                 .totalAmount(totalAmount)
                 .status(OrderStatus.PENDING)
                 .deliveryAddress(request.getDeliveryAddress())
@@ -93,156 +75,175 @@ public class OrderService {
                 .paymentMethod(request.getPaymentMethod())
                 .build();
 
-        // OrderItem 추가
         for (OrderItem item : orderItems) {
             order.addOrderItem(item);
         }
 
-        Order savedOrder = orderRepository.save(order);
+        orderRepository.save(order);
 
-        // Step 3: 재고 차감 (Product Service 호출)
+        // 3. 재고 차감
         try {
-            for (OrderItem item : orderItems) {
-                int newStock = getProductStock(item.getProductId()) - item.getQuantity();
-                productServiceClient.updateStock(item.getProductId(), newStock);
+            for (OrderItemRequest itemRequest : request.getItems()) {
+                ProductInfo product = productServiceClient.getProduct(itemRequest.getProductId());
+                int newStock = product.getStockQuantity() - itemRequest.getQuantity();
+                productServiceClient.updateStock(itemRequest.getProductId(), newStock);
             }
         } catch (Exception e) {
             log.error("Failed to update stock. Rolling back order: {}", orderNumber, e);
-            throw new RuntimeException("재고 업데이트 실패. 주문이 취소되었습니다.", e);
+            orderRepository.delete(order);
+            throw new RuntimeException("재고 업데이트 실패. 주문이 취소되었습니다.");
         }
 
-        // Step 4: Kafka 이벤트 발행
-        publishOrderEvent(savedOrder, OrderEvent.EventType.ORDER_CREATED);
+        // 4. 결제 처리
+        PaymentRequest paymentRequest = PaymentRequest.builder()
+                .orderNumber(order.getOrderNumber())
+                .userId(userId)
+                .amount(totalAmount)
+                .method(request.getPaymentMethod())
+                .cardNumber("1234567812345678")
+                .build();
 
-        log.info("Order created successfully: orderNumber={}, orderId={}", orderNumber, savedOrder.getId());
-
-        return OrderResponse.from(savedOrder);
-    }
-
-    @Transactional
-    public OrderResponse confirmOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
-
-        order.confirm();
-
-        publishOrderEvent(order, OrderEvent.EventType.ORDER_CONFIRMED);
-
-        log.info("Order confirmed: orderId={}", orderId);
-
-        return OrderResponse.from(order);
-    }
-
-    @Transactional
-    public OrderResponse shipOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
-
-        order.ship();
-
-        publishOrderEvent(order, OrderEvent.EventType.ORDER_SHIPPED);
-
-        log.info("Order shipped: orderId={}", orderId);
-
-        return OrderResponse.from(order);
-    }
-
-    @Transactional
-    public OrderResponse deliverOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
-
-        order.deliver();
-
-        publishOrderEvent(order, OrderEvent.EventType.ORDER_DELIVERED);
-
-        log.info("Order delivered: orderId={}", orderId);
-
-        return OrderResponse.from(order);
-    }
-
-    @Transactional
-    public OrderResponse cancelOrder(Long orderId, String reason) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
-
-        // 재고 복구
         try {
-            for (OrderItem item : order.getOrderItems()) {
-                int newStock = getProductStock(item.getProductId()) + item.getQuantity();
-                productServiceClient.updateStock(item.getProductId(), newStock);
-            }
+            PaymentResponse paymentResponse = paymentServiceClient.processPayment(paymentRequest);
+            order.setPaymentTransactionId(paymentResponse.getTransactionId());
+            log.info("결제 완료: transactionId={}", paymentResponse.getTransactionId());
         } catch (Exception e) {
-            log.error("Failed to restore stock for cancelled order: {}", orderId, e);
+            log.error("결제 실패. 주문 롤백: {}", order.getOrderNumber(), e);
+            orderRepository.delete(order);
+            throw new RuntimeException("결제 처리 실패");
         }
 
-        order.cancel(reason);
+        // 5. 주문 이벤트 발행
+        publishOrderEvent(order, "ORDER_CREATED");
 
-        publishOrderEvent(order, OrderEvent.EventType.ORDER_CANCELLED);
-
-        log.info("Order cancelled: orderId={}, reason={}", orderId, reason);
-
-        return OrderResponse.from(order);
+        return toResponse(order);
     }
 
+    @Transactional(readOnly = true)
     public OrderResponse getOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
-
-        return OrderResponse.from(order);
+                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
+        return toResponse(order);
     }
 
-    public OrderResponse getOrderByOrderNumber(String orderNumber) {
-        Order order = orderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
-
-        return OrderResponse.from(order);
-    }
-
-    public Page<OrderResponse> getOrdersByUserId(Long userId, Pageable pageable) {
-        return orderRepository.findByUserId(userId, pageable)
-                .map(OrderResponse::from);
-    }
-
-    public Page<OrderResponse> getOrdersByStatus(OrderStatus status, Pageable pageable) {
-        return orderRepository.findByStatus(status, pageable)
-                .map(OrderResponse::from);
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getUserOrders(Long userId) {
+        return orderRepository.findByUserId(userId).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     private String generateOrderNumber() {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String uuid = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        return "ORD-" + timestamp + "-" + uuid;
+        String random = String.format("%08X", new Random().nextInt());
+        return "ORD-" + timestamp + "-" + random;
     }
 
-    private int getProductStock(Long productId) {
-        ProductInfo productInfo = productServiceClient.getProductInfo(productId);
-        return productInfo.getStockQuantity();
-    }
-
-    private void publishOrderEvent(Order order, OrderEvent.EventType eventType) {
-        List<OrderEvent.OrderItemInfo> items = order.getOrderItems().stream()
+    private void publishOrderEvent(Order order, String eventType) {
+        List<OrderEvent.OrderItemInfo> items = order.getItems().stream()
                 .map(item -> OrderEvent.OrderItemInfo.builder()
                         .productId(item.getProductId())
                         .productName(item.getProductName())
                         .quantity(item.getQuantity())
                         .price(item.getProductPrice())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         OrderEvent event = OrderEvent.builder()
-                .eventType(eventType)
-                .orderId(order.getId())
+                .eventType(OrderEvent.EventType.valueOf(eventType))
+                .orderNumber(order.getOrderNumber())
+                .userId(order.getUserId())
+                .totalAmount(order.getTotalAmount())
+                .status(order.getStatus())
+                .items(items)
+                .occurredAt(LocalDateTime.now())
+                .build();
+
+        kafkaTemplate.send("order-events", order.getOrderNumber(), event);
+        log.info("Order event published: {}", eventType);
+    }
+
+    private OrderResponse toResponse(Order order) {
+        List<OrderItemResponse> items = order.getItems().stream()
+                .map(item -> OrderItemResponse.builder()
+                        .id(item.getId())
+                        .productId(item.getProductId())
+                        .productName(item.getProductName())
+                        .productPrice(item.getProductPrice())
+                        .quantity(item.getQuantity())
+                        .totalPrice(item.getTotalPrice())
+                        .build())
+                .toList();
+
+        return OrderResponse.builder()
+                .id(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .userId(order.getUserId())
                 .items(items)
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus())
-                .occurredAt(LocalDateTime.now())
+                .deliveryAddress(order.getDeliveryAddress())
+                .phoneNumber(order.getPhoneNumber())
+                .orderNote(order.getOrderNote())
+                .paymentMethod(order.getPaymentMethod())
+                .paymentTransactionId(order.getPaymentTransactionId())
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
+                .confirmedAt(order.getConfirmedAt())
+                .shippedAt(order.getShippedAt())
+                .deliveredAt(order.getDeliveredAt())
+                .cancelledAt(order.getCancelledAt())
                 .build();
+    }
 
-        kafkaTemplate.send(ORDER_TOPIC, String.valueOf(order.getId()), event);
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderByOrderNumber(String orderNumber) {
+        Order order = orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
+        return toResponse(order);
+    }
 
-        log.info("Order event published: eventType={}, orderId={}", eventType, order.getId());
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getOrdersByUserId(Long userId, Pageable pageable) {
+        return orderRepository.findByUserId(userId, pageable)
+                .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getOrdersByStatus(OrderStatus status, Pageable pageable) {
+        return orderRepository.findByStatus(status, pageable)
+                .map(this::toResponse);
+    }
+
+    public OrderResponse confirmOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
+        order.confirm();
+        publishOrderEvent(order, "ORDER_CONFIRMED");
+        return toResponse(order);
+    }
+
+    public OrderResponse shipOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
+        order.ship();
+        publishOrderEvent(order, "ORDER_SHIPPED");
+        return toResponse(order);
+    }
+
+    public OrderResponse deliverOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
+        order.deliver();
+        publishOrderEvent(order, "ORDER_DELIVERED");
+        return toResponse(order);
+    }
+
+    public OrderResponse cancelOrder(Long orderId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
+        order.cancel();
+        publishOrderEvent(order, "ORDER_CANCELLED");
+        return toResponse(order);
     }
 }

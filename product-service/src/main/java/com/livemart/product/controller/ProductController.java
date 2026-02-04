@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @Tag(name = "Product API", description = "상품 관리 API")
 @RestController
 @RequestMapping("/api/products")
@@ -86,7 +88,8 @@ public class ProductController {
     @PatchMapping("/{productId}/stock")
     public ResponseEntity<Void> updateStock(
             @PathVariable Long productId,
-            @RequestParam Integer quantity) {
+            @RequestBody Map<String, Object> request) {
+        Integer quantity = ((Number) request.get("stockQuantity")).intValue();
         productService.updateStock(productId, quantity);
         return ResponseEntity.ok().build();
     }

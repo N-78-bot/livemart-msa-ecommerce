@@ -39,7 +39,7 @@ public class OrderResponse {
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .userId(order.getUserId())
-                .items(order.getOrderItems().stream()
+                .items(order.getItems().stream()
                         .map(OrderItemResponse::from)
                         .collect(Collectors.toList()))
                 .totalAmount(order.getTotalAmount())
