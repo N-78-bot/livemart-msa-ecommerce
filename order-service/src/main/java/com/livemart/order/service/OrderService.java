@@ -238,12 +238,40 @@ public class OrderService {
         publishOrderEvent(order, "ORDER_DELIVERED");
         return toResponse(order);
     }
-
     public OrderResponse cancelOrder(Long orderId, String reason) {
+        log.info("Cancelling order: {}", orderId);
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
-        order.cancel();
-        publishOrderEvent(order, "ORDER_CANCELLED");
-        return toResponse(order);
+
+        // 취소 가능한 상태 확인
+        if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new RuntimeException("취소할 수 없는 주문 상태입니다.");
+        }
+
+        try {
+            // 1. 결제 취소
+            if (order.getPaymentTransactionId() != null) {
+                paymentServiceClient.cancelPayment(order.getPaymentTransactionId(), reason);
+                log.info("Payment cancelled: {}", order.getPaymentTransactionId());
+            }
+
+            // 2. 재고 복구
+            for (OrderItem item : order.getItems()) {
+                productServiceClient.restoreStock(item.getProductId(), item.getQuantity());
+                log.info("Stock restored: productId={}, quantity={}", item.getProductId(), item.getQuantity());
+            }
+
+            // 3. 주문 상태 변경
+            order.cancel();
+            publishOrderEvent(order, "ORDER_CANCELLED");
+
+            return toResponse(order);
+
+        } catch (Exception e) {
+            log.error("Failed to cancel order: {}", orderId, e);
+            throw new RuntimeException("주문 취소에 실패했습니다: " + e.getMessage());
+        }
     }
+
 }

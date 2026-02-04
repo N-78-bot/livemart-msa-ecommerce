@@ -52,6 +52,32 @@ public class PaymentService {
         return toResponse(payment);
     }
 
+    @Transactional
+    public void cancelPayment(String transactionId, String reason) {
+        Payment payment = paymentRepository.findByTransactionId(transactionId)
+                .orElseThrow(() -> new RuntimeException("결제를 찾을 수 없습니다."));
+
+        if (payment.getStatus() != PaymentStatus.COMPLETED) {
+            throw new RuntimeException("취소할 수 없는 결제 상태입니다.");
+        }
+
+        payment.cancel(reason);
+        paymentRepository.save(payment);
+
+        // Kafka 이벤트 발행
+        PaymentEvent event = PaymentEvent.builder()
+                .eventType(PaymentEvent.EventType.PAYMENT_CANCELLED)
+                .transactionId(payment.getTransactionId())
+                .orderNumber(payment.getOrderNumber())
+                .amount(payment.getAmount())
+                .occurredAt(LocalDateTime.now())
+                .build();
+
+        kafkaTemplate.send("payment-events", payment.getTransactionId(), event);
+
+        log.info("Payment cancelled: transactionId={}, reason={}", transactionId, reason);
+    }
+
     public PaymentResponse cancelPayment(String transactionId) {
         Payment payment = paymentRepository.findByTransactionId(transactionId)
                 .orElseThrow(() -> new RuntimeException("결제 정보를 찾을 수 없습니다."));
@@ -75,7 +101,7 @@ public class PaymentService {
 
     private void publishPaymentEvent(Payment payment, String eventType) {
         PaymentEvent event = PaymentEvent.builder()
-                .eventType(eventType)
+                .eventType(PaymentEvent.EventType.valueOf(eventType))
                 .transactionId(payment.getTransactionId())
                 .orderNumber(payment.getOrderNumber())
                 .userId(payment.getUserId())

@@ -46,6 +46,25 @@ public class ProductServiceClient {
         log.info("Updating stock for productId: {}, quantity: {}", productId, stockQuantity);
     }
 
+    // 재고 복구 메서드 추가
+    @CircuitBreaker(name = "productService", fallbackMethod = "restoreStockFallback")
+    public void restoreStock(Long productId, int quantity) {
+        log.info("Restoring stock for productId: {}, quantity: {}", productId, quantity);
+
+        Map<String, Integer> body = Map.of("stockQuantity", quantity);
+
+        webClientBuilder.build()
+                .patch()
+                .uri("http://localhost:8082/api/products/" + productId + "/stock/restore")
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .timeout(Duration.ofSeconds(10))
+                .block();
+
+        log.info("Stock restored for productId: {}", productId);
+    }
+
     private ProductInfo getProductFallback(Long productId, Exception e) {
         log.error("Failed to get product: productId={}", productId, e);
         throw new RuntimeException("상품 정보를 가져올 수 없습니다.");
@@ -54,5 +73,10 @@ public class ProductServiceClient {
     private void updateStockFallback(Long productId, int stockQuantity, Exception e) {
         log.error("Failed to update stock for productId: {}", productId, e);
         throw new RuntimeException("재고 업데이트에 실패했습니다.");
+    }
+
+    private void restoreStockFallback(Long productId, int quantity, Exception e) {
+        log.error("Failed to restore stock for productId: {}", productId, e);
+        throw new RuntimeException("재고 복구에 실패했습니다.");
     }
 }

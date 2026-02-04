@@ -1,14 +1,17 @@
 package com.livemart.payment.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "payments")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Payment {
@@ -25,7 +28,7 @@ public class Payment {
     @Column(nullable = false)
     private Long userId;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false)
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
@@ -40,7 +43,7 @@ public class Payment {
     private String approvalNumber;
     private String failureReason;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     private LocalDateTime completedAt;
@@ -48,8 +51,7 @@ public class Payment {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        status = PaymentStatus.PENDING;
+        this.createdAt = LocalDateTime.now();
     }
 
     public void complete(String approvalNumber) {
@@ -65,6 +67,12 @@ public class Payment {
 
     public void cancel() {
         this.status = PaymentStatus.CANCELLED;
+        this.cancelledAt = LocalDateTime.now();
+    }
+
+    public void cancel(String reason) {
+        this.status = PaymentStatus.CANCELLED;
+        this.failureReason = reason;
         this.cancelledAt = LocalDateTime.now();
     }
 }

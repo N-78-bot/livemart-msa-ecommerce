@@ -192,4 +192,14 @@ public class ProductService {
 
         log.info("Kafka 이벤트 발행: eventType={}, productId={}", eventType, product.getId());
     }
+    @Transactional
+    public void restoreStock(Long productId, int quantity) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다."));
+
+        int newStock = product.getStockQuantity() + quantity;
+        product.updateStock(newStock);
+
+        log.info("Stock restored: productId={}, +{}, newStock={}", productId, quantity, newStock);
+    }
 }

@@ -9,11 +9,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class PaymentEvent {
-    private String eventType;
+    private EventType eventType;
     private String transactionId;
     private String orderNumber;
     private Long userId;
@@ -21,4 +21,10 @@ public class PaymentEvent {
     private PaymentStatus status;
     private String approvalNumber;
     private LocalDateTime occurredAt;
+
+    public enum EventType {
+        PAYMENT_COMPLETED,
+        PAYMENT_FAILED,
+        PAYMENT_CANCELLED
+    }
 }

@@ -94,6 +94,16 @@ public class ProductController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "재고 복구", description = "주문 취소 시 재고를 복구합니다")
+    @PatchMapping("/{productId}/stock/restore")
+    public ResponseEntity<Void> restoreStock(
+            @PathVariable Long productId,
+            @RequestBody Map<String, Object> request) {
+        Integer quantity = ((Number) request.get("stockQuantity")).intValue();
+        productService.restoreStock(productId, quantity);
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "상품 삭제", description = "상품을 삭제합니다")
     @DeleteMapping("/{productId}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long productId) {
