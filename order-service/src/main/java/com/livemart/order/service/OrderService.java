@@ -26,7 +26,6 @@ import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 @Slf4j
 public class OrderService {
     private final OrderRepository orderRepository;
@@ -34,9 +33,13 @@ public class OrderService {
     private final PaymentServiceClient paymentServiceClient;
     private final KafkaTemplate<String, OrderEvent> kafkaTemplate;
 
-    @Transactional
     @DistributedLock(key = "#request.items[0].productId", waitTime = 10, leaseTime = 5)
     public OrderResponse createOrder(OrderCreateRequest request) {
+        return createOrderInternal(request);
+    }
+
+    @Transactional
+    private OrderResponse createOrderInternal(OrderCreateRequest request) {
         Long userId = request.getUserId();
         log.info("Creating order for userId: {}", userId);
 
@@ -218,6 +221,7 @@ public class OrderService {
                 .map(this::toResponse);
     }
 
+    @Transactional
     public OrderResponse confirmOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
@@ -226,6 +230,7 @@ public class OrderService {
         return toResponse(order);
     }
 
+    @Transactional
     public OrderResponse shipOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
@@ -234,6 +239,7 @@ public class OrderService {
         return toResponse(order);
     }
 
+    @Transactional
     public OrderResponse deliverOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
@@ -241,31 +247,29 @@ public class OrderService {
         publishOrderEvent(order, "ORDER_DELIVERED");
         return toResponse(order);
     }
+
+    @Transactional
     public OrderResponse cancelOrder(Long orderId, String reason) {
         log.info("Cancelling order: {}", orderId);
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
 
-        // 취소 가능한 상태 확인
         if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.CONFIRMED) {
             throw new RuntimeException("취소할 수 없는 주문 상태입니다.");
         }
 
         try {
-            // 1. 결제 취소
             if (order.getPaymentTransactionId() != null) {
                 paymentServiceClient.cancelPayment(order.getPaymentTransactionId(), reason);
                 log.info("Payment cancelled: {}", order.getPaymentTransactionId());
             }
 
-            // 2. 재고 복구
             for (OrderItem item : order.getItems()) {
                 productServiceClient.restoreStock(item.getProductId(), item.getQuantity());
                 log.info("Stock restored: productId={}, quantity={}", item.getProductId(), item.getQuantity());
             }
 
-            // 3. 주문 상태 변경
             order.cancel();
             publishOrderEvent(order, "ORDER_CANCELLED");
 
@@ -276,5 +280,4 @@ public class OrderService {
             throw new RuntimeException("주문 취소에 실패했습니다: " + e.getMessage());
         }
     }
-
 }

@@ -69,12 +69,12 @@ public class DistributedLockAspect {
 
         try {
             Object value = parser.parseExpression(keyExpression).getValue(context);
-            String lockKey = String.format("lock:order:product:%s", value);
+            String lockKey = String.format("lock:stock:%s", value);
             log.info("Generated lock key: {}", lockKey);
             return lockKey;
         } catch (Exception e) {
             log.error("Failed to parse key expression: {}", keyExpression, e);
-            return "lock:order:default";
+            return "lock:stock:default";
         }
     }
 }
