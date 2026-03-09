@@ -11,7 +11,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('info');
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState({ name: '', email: '', phone: '', username: '' });
+  const [profile, setProfile] = useState({ name: '', email: '', phoneNumber: '' });
   const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function ProfilePage() {
     if (!userId) { router.push('/auth'); return; }
     fetch(`/api/users/${userId}`, { credentials: 'include' })
       .then(r => r.json())
-      .then(d => setProfile({ name: d.name || name, email: d.email || '', phone: d.phone || '', username: d.username || '' }))
+      .then(d => setProfile({ name: d.name || name, email: d.email || '', phoneNumber: d.phoneNumber || '' }))
       .catch(() => {});
   }, []);
 
@@ -30,10 +30,11 @@ export default function ProfilePage() {
     setLoading(true);
     const userId = localStorage.getItem('userId');
     try {
-      await fetch(`/api/users/${userId}`, {
-        method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile),
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: profile.name, phoneNumber: profile.phoneNumber }),
       });
+      if (!res.ok) throw new Error('저장 실패');
       localStorage.setItem('userName', profile.name);
       toast.success('프로필이 저장되었습니다');
     } catch { toast.error('저장 실패'); }
@@ -147,7 +148,7 @@ export default function ProfilePage() {
                 <h2 className="font-bold text-gray-900 text-lg">기본 정보</h2>
                 <div>
                   <label className="form-label">아이디</label>
-                  <input type="text" value={profile.username} readOnly className="form-input bg-gray-50 text-gray-400 cursor-not-allowed" />
+                  <input type="text" value={profile.email} readOnly className="form-input bg-gray-50 text-gray-400 cursor-not-allowed" />
                 </div>
                 <div>
                   <label className="form-label">이름</label>
@@ -159,7 +160,7 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <label className="form-label">전화번호</label>
-                  <input type="tel" value={profile.phone} onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))} placeholder="010-0000-0000" className="form-input" />
+                  <input type="tel" value={profile.phoneNumber} onChange={e => setProfile(p => ({ ...p, phoneNumber: e.target.value }))} placeholder="010-0000-0000" className="form-input" />
                 </div>
                 <button type="submit" disabled={loading} className="btn-primary px-6">
                   {loading ? '저장중...' : '저장하기'}
