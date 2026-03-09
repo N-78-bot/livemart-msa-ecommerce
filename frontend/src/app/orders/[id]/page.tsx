@@ -4,17 +4,26 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { GlobalNav } from '@/components/GlobalNav';
 
+interface OrderItem {
+  id: number;
+  productId: number;
+  productName: string;
+  productPrice: number;
+  quantity: number;
+  totalPrice: number;
+}
+
 interface OrderDetail {
   id: number;
+  orderNumber?: string;
   status: string;
   totalAmount: number;
   createdAt: string;
-  shippingAddress?: string;
-  recipientName?: string;
-  recipientPhone?: string;
-  deliveryMemo?: string;
+  deliveryAddress?: string;
+  phoneNumber?: string;
+  orderNote?: string;
   paymentMethod?: string;
-  items?: Array<{ productId: number; productName: string; quantity: number; price: number; imageUrl?: string }>;
+  items?: OrderItem[];
   trackingNumber?: string;
 }
 
@@ -84,7 +93,7 @@ export default function OrderDetailPage() {
             </button>
             <h1 className="text-2xl font-bold text-gray-900">주문 상세</h1>
             <p className="text-sm text-gray-500 mt-1">
-              주문번호: #{order.id} · {new Date(order.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+              주문번호: {order.orderNumber || `#${order.id}`} · {new Date(order.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
           <span className={`text-sm font-semibold px-3 py-1.5 rounded-full ${
@@ -137,22 +146,20 @@ export default function OrderDetailPage() {
           <div className="space-y-3">
             {(order.items || []).map((item, i) => (
               <div key={i} className="flex items-center gap-4 py-3 border-b border-gray-50 last:border-0">
-                <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
-                  {item.imageUrl
-                    ? <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>}
+                <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center text-2xl">
+                  📦
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">{item.productName}</p>
-                  <p className="text-sm text-gray-500">{item.quantity}개 × {item.price.toLocaleString()}원</p>
+                  <p className="text-sm text-gray-500">{item.quantity}개 × {Number(item.productPrice).toLocaleString()}원</p>
                 </div>
-                <p className="font-bold text-gray-900">{(item.price * item.quantity).toLocaleString()}원</p>
+                <p className="font-bold text-gray-900">{Number(item.totalPrice).toLocaleString()}원</p>
               </div>
             ))}
           </div>
           <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between">
             <span className="font-bold text-gray-900">총 결제금액</span>
-            <span className="text-xl font-bold text-red-600">{order.totalAmount.toLocaleString()}원</span>
+            <span className="text-xl font-bold text-red-600">{Number(order.totalAmount).toLocaleString()}원</span>
           </div>
         </div>
 
@@ -161,10 +168,9 @@ export default function OrderDetailPage() {
           <div className="bg-white rounded-xl border border-gray-100 p-5">
             <h2 className="font-bold text-gray-900 mb-3">배송 정보</h2>
             <div className="space-y-2 text-sm">
-              <div className="flex gap-3"><span className="text-gray-400 w-16 flex-shrink-0">받는 분</span><span className="text-gray-900 font-medium">{order.recipientName || '-'}</span></div>
-              <div className="flex gap-3"><span className="text-gray-400 w-16 flex-shrink-0">연락처</span><span className="text-gray-900">{order.recipientPhone || '-'}</span></div>
-              <div className="flex gap-3"><span className="text-gray-400 w-16 flex-shrink-0">주소</span><span className="text-gray-900">{order.shippingAddress || '-'}</span></div>
-              {order.deliveryMemo && <div className="flex gap-3"><span className="text-gray-400 w-16 flex-shrink-0">메모</span><span className="text-gray-900">{order.deliveryMemo}</span></div>}
+              <div className="flex gap-3"><span className="text-gray-400 w-16 flex-shrink-0">연락처</span><span className="text-gray-900">{order.phoneNumber || '-'}</span></div>
+              <div className="flex gap-3"><span className="text-gray-400 w-16 flex-shrink-0">주소</span><span className="text-gray-900">{order.deliveryAddress || '-'}</span></div>
+              {order.orderNote && <div className="flex gap-3"><span className="text-gray-400 w-16 flex-shrink-0">메모</span><span className="text-gray-900">{order.orderNote}</span></div>}
             </div>
           </div>
           {/* 결제 정보 */}
@@ -172,7 +178,7 @@ export default function OrderDetailPage() {
             <h2 className="font-bold text-gray-900 mb-3">결제 정보</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-gray-500">결제 수단</span><span className="font-medium">{order.paymentMethod || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">결제 금액</span><span className="font-bold text-red-600 text-base">{order.totalAmount.toLocaleString()}원</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">결제 금액</span><span className="font-bold text-red-600 text-base">{Number(order.totalAmount).toLocaleString()}원</span></div>
             </div>
           </div>
         </div>

@@ -7,8 +7,8 @@ interface OrderItem {
   productId: number;
   productName: string;
   quantity: number;
-  price: number;
-  imageUrl?: string;
+  productPrice: number;
+  totalPrice: number;
 }
 
 interface Order {
@@ -18,7 +18,7 @@ interface Order {
   totalAmount: number;
   createdAt: string;
   items?: OrderItem[];
-  shippingAddress?: string;
+  deliveryAddress?: string;
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; emoji: string }> = {
