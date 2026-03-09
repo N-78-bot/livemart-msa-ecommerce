@@ -288,7 +288,7 @@ export default function ProductDetailPage() {
               </button>
               <button onClick={handleAddToCart} disabled={!inStock}
                 className="flex-1 py-3 rounded-xl font-bold border-2 border-red-600 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">장바구니</button>
-              <button onClick={()=>{handleAddToCart();router.push('/orders');}} disabled={!inStock}
+              <button onClick={()=>{handleAddToCart();router.push('/orders/new');}} disabled={!inStock}
                 className="flex-1 py-3 rounded-xl font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">바로 구매</button>
             </div>
           </div>

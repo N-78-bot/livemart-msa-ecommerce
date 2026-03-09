@@ -1,5 +1,5 @@
-import { OrderForm } from '@/components/OrderForm';
+import { redirect } from 'next/navigation';
 
 export default function OrderPage() {
-  return <OrderForm />;
+  redirect('/orders/new');
 }
