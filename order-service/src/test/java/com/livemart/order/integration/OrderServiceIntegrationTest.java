@@ -3,6 +3,7 @@ package com.livemart.order.integration;
 import com.livemart.order.domain.Order;
 import com.livemart.order.domain.OrderStatus;
 import com.livemart.order.dto.OrderCreateRequest;
+import com.livemart.order.dto.OrderItemRequest;
 import com.livemart.order.repository.OrderRepository;
 import com.livemart.order.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +15,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -26,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Testcontainers를 활용한 통합 테스트
- * 실제 MySQL, Redis, Kafka 환경에서 테스트
+ * 실제 PostgreSQL, Redis, Kafka 환경에서 테스트
  */
 @SpringBootTest
 @Testcontainers
@@ -34,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OrderServiceIntegrationTest {
 
     @Container
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
         .withDatabaseName("testdb")
         .withUsername("test")
         .withPassword("test")
@@ -51,10 +52,10 @@ class OrderServiceIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        // MySQL
-        registry.add("spring.datasource.url", mysql::getJdbcUrl);
-        registry.add("spring.datasource.username", mysql::getUsername);
-        registry.add("spring.datasource.password", mysql::getPassword);
+        // PostgreSQL
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
 
         // Redis
         registry.add("spring.data.redis.host", redis::getHost);
@@ -82,10 +83,9 @@ class OrderServiceIntegrationTest {
         OrderCreateRequest request = OrderCreateRequest.builder()
             .userId(1L)
             .items(List.of(
-                OrderCreateRequest.OrderItemRequest.builder()
+                OrderItemRequest.builder()
                     .productId(1L)
                     .quantity(2)
-                    .price(BigDecimal.valueOf(10000))
                     .build()
             ))
             .deliveryAddress("서울시 강남구")
@@ -121,10 +121,9 @@ class OrderServiceIntegrationTest {
                 OrderCreateRequest request = OrderCreateRequest.builder()
                     .userId(1L)
                     .items(List.of(
-                        OrderCreateRequest.OrderItemRequest.builder()
+                        OrderItemRequest.builder()
                             .productId(1L)
                             .quantity(1)
-                            .price(BigDecimal.valueOf(1000))
                             .build()
                     ))
                     .deliveryAddress("서울시")
@@ -154,10 +153,9 @@ class OrderServiceIntegrationTest {
         OrderCreateRequest request = OrderCreateRequest.builder()
             .userId(1L)
             .items(List.of(
-                OrderCreateRequest.OrderItemRequest.builder()
+                OrderItemRequest.builder()
                     .productId(1L)
                     .quantity(2)
-                    .price(BigDecimal.valueOf(5000))
                     .build()
             ))
             .deliveryAddress("서울시")
@@ -185,10 +183,9 @@ class OrderServiceIntegrationTest {
             OrderCreateRequest request = OrderCreateRequest.builder()
                 .userId(1L)
                 .items(List.of(
-                    OrderCreateRequest.OrderItemRequest.builder()
+                    OrderItemRequest.builder()
                         .productId((long) i)
                         .quantity(1)
-                        .price(BigDecimal.valueOf(1000))
                         .build()
                 ))
                 .deliveryAddress("서울시")

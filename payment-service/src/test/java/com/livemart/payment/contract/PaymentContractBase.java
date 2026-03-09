@@ -9,11 +9,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import static org.mockito.ArgumentMatchers.any;
 
@@ -29,7 +29,7 @@ public abstract class PaymentContractBase {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private PaymentService paymentService;
 
     @BeforeEach
@@ -47,7 +47,7 @@ public abstract class PaymentContractBase {
                 .status(com.livemart.payment.domain.PaymentStatus.COMPLETED)
                 .amount(BigDecimal.valueOf(50000))
                 .paymentMethod(com.livemart.payment.domain.PaymentMethod.CREDIT_CARD)
-                .createdAt(OffsetDateTime.now())
+                .createdAt(Instant.now())
                 .build();
 
         BDDMockito.given(paymentService.processPayment(any(PaymentRequest.Create.class)))
