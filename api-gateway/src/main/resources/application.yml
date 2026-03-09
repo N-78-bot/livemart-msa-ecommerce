@@ -11,6 +11,11 @@ spring:
       - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
   flyway:
     enabled: false
+  # Redis (Rate Limiting 전용)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   cloud:
     gateway:
       # X-Forwarded 헤더 전달 - user-service가 {baseUrl}을 api-gateway URL로 인식
@@ -23,6 +28,18 @@ spring:
         port-enabled: true
         proto-enabled: true
         prefix-enabled: true
+
+      # 전역 기본 필터: 모든 라우트에 Rate Limiting 적용
+      # - replenishRate: 초당 토큰 충전 수 (정상 처리량)
+      # - burstCapacity: 버킷 최대 용량 (순간 최대)
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 100
+            redis-rate-limiter.burstCapacity: 200
+            redis-rate-limiter.requestedTokens: 1
+            key-resolver: "#{@userKeyResolver}"
+
       routes:
         # User Service - API
         - id: user-service
@@ -56,13 +73,19 @@ spring:
           filters:
             - RewritePath=/api/(?<segment>.*), /api/${segment}
 
-        # Order Service
+        # Order Service - 주문 생성/조회 (낮은 rate limit: 20 req/s)
         - id: order-service
           uri: lb://order-service
           predicates:
             - Path=/api/orders/**
           filters:
             - RewritePath=/api/orders/(?<segment>.*), /api/orders/${segment}
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@userKeyResolver}"
 
         # Coupon & Return Service (Order Service)
         - id: coupon-service
@@ -79,13 +102,19 @@ spring:
           filters:
             - RewritePath=/api/returns/(?<segment>.*), /api/returns/${segment}
 
-        # Payment Service
+        # Payment Service - 결제 (낮은 rate limit: 20 req/s)
         - id: payment-service
           uri: lb://payment-service
           predicates:
             - Path=/api/payments/**
           filters:
             - RewritePath=/api/payments/(?<segment>.*), /api/v1/payments/${segment}
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@userKeyResolver}"
 
         # Inventory Service (미구현 - 라우팅만 유지)
         - id: inventory-service
@@ -138,17 +167,28 @@ spring:
             allowCredentials: true
             maxAge: 3600
 
-# Actuator
+# Actuator + Prometheus
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,gateway
+        include: health,info,gateway,prometheus,metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  # Distributed Tracing (OTLP → Zipkin/Jaeger)
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://zipkin:9411/api/v2/spans}
 
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG
-
+    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.gateway.filter.ratelimit: DEBUG
 
 eureka:
   client:
