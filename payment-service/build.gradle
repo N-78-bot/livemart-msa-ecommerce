@@ -1,3 +1,7 @@
+plugins {
+    id 'org.springframework.cloud.contract' version '4.1.4'
+}
+
 dependencies {
     implementation project(':common')
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -14,4 +18,12 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.testcontainers:kafka'
+
+    // Spring Cloud Contract — Producer (계약 검증 테스트 자동 생성)
+    testImplementation "org.springframework.cloud:spring-cloud-starter-contract-verifier:4.1.4"
+}
+
+contracts {
+    packageWithBaseClasses = 'com.livemart.payment.contract'
+    failOnNoContracts = false
 }

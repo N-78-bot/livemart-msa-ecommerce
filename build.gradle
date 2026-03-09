@@ -12,6 +12,7 @@ allprojects {
 
 ext {
     set('springCloudVersion', "2024.0.0")
+    set('springCloudContractVersion', "4.1.4")
     set('opentelemetryVersion', "1.44.1")
     set('testcontainersVersion', "1.20.4")
     set('resilience4jVersion', "2.2.0")
@@ -21,6 +22,7 @@ ext {
 
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'jacoco'
     apply plugin: 'org.springframework.boot'
     apply plugin: 'io.spring.dependency-management'
 
@@ -83,6 +85,46 @@ subprojects {
     tasks.named('test') {
         useJUnitPlatform()
         jvmArgs '--enable-preview'
+        finalizedBy jacocoTestReport
+    }
+
+    jacocoTestReport {
+        dependsOn test
+        reports {
+            xml.required = true
+            html.required = true
+            csv.required = false
+        }
+        // 자동생성 코드 제외 (Mapstruct, Querydsl, Protobuf)
+        afterEvaluate {
+            classDirectories.setFrom(files(classDirectories.files.collect {
+                fileTree(dir: it, exclude: [
+                    '**/dto/**',
+                    '**/domain/**',
+                    '**/*Application*',
+                    '**/config/**',
+                    '**/*MapperImpl*',
+                    '**/*GrpcServiceGrpc*',
+                    '**/*Proto*',
+                ])
+            }))
+        }
+    }
+
+    jacocoTestCoverageVerification {
+        dependsOn jacocoTestReport
+        violationRules {
+            rule {
+                // 서비스 레이어: 최소 60% 라인 커버리지
+                element = 'PACKAGE'
+                includes = ['com.livemart.*.service']
+                limit {
+                    counter = 'LINE'
+                    value = 'COVEREDRATIO'
+                    minimum = 0.60
+                }
+            }
+        }
     }
 
     // Virtual Threads (Java 21 Project Loom) - enabled via application.yml
