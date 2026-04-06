@@ -125,10 +125,12 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
         return redisTemplate.execute(
                 rateLimitScript,
                 List.of(rateLimitKey),
-                String.valueOf(now),
-                String.valueOf(windowMs),
-                String.valueOf(maxRequests),
-                String.valueOf(ttlSeconds)
+                List.of(
+                    String.valueOf(now),
+                    String.valueOf(windowMs),
+                    String.valueOf(maxRequests),
+                    String.valueOf(ttlSeconds)
+                )
             )
             .collectList()
             .flatMap(results -> {
