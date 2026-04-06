@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.3.6' apply false
+    id 'org.springframework.boot' version '3.4.0' apply false
     id 'io.spring.dependency-management' version '1.1.7' apply false
     id 'org.graalvm.buildtools.native' version '0.10.4' apply false
     id 'org.sonarqube' version '5.1.0.4882'
@@ -148,6 +148,17 @@ subprojects {
     }
 
     // Virtual Threads (Java 21 Project Loom) - enabled via application.yml
+
+    // Spring Boot 4.x 아티팩트가 트랜지티브 의존성으로 유입되는 것을 방지
+    // (Spring Cloud 2023.0.3이 spring-boot-web-server 등을 버전 명시 없이 참조할 때
+    //  Maven Central에서 최신 4.x 버전을 가져오는 문제 수정)
+    configurations.all {
+        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+            if (details.requested.group == 'org.springframework.boot') {
+                details.useVersion('3.4.0')
+            }
+        }
+    }
 }
 
 sonarqube {
