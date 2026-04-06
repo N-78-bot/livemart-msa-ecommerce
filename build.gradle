@@ -149,15 +149,15 @@ subprojects {
 
     // Virtual Threads (Java 21 Project Loom) - enabled via application.yml
 
-    // Spring Boot 4.x 아티팩트가 트랜지티브 의존성으로 유입되는 것을 방지
-    // (Spring Cloud 2023.0.3이 spring-boot-web-server 등을 버전 명시 없이 참조할 때
-    //  Maven Central에서 최신 4.x 버전을 가져오는 문제 수정)
+    // Spring Boot 4.x 전용 standalone 모듈 차단
+    // Spring Cloud 2023.0.3 트랜지티브 의존성이 Maven Central 최신(4.x)을 가져오는 문제 방지
+    // Spring Boot 3.4.0에서 해당 기능은 spring-boot-autoconfigure에 포함됨
     configurations.all {
-        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-            if (details.requested.group == 'org.springframework.boot') {
-                details.useVersion('3.4.0')
-            }
-        }
+        exclude group: 'org.springframework.boot', module: 'spring-boot-web-server'
+        exclude group: 'org.springframework.boot', module: 'spring-boot-webflux'
+        exclude group: 'org.springframework.boot', module: 'spring-boot-webmvc'
+        exclude group: 'org.springframework.boot', module: 'spring-boot-validation'
+        exclude group: 'org.springframework.boot', module: 'spring-boot-jackson'
     }
 }
 
