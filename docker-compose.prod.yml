@@ -71,6 +71,7 @@ services:
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
       - SPRING_FLYWAY_ENABLED=false
+      - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration,org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
     restart: unless-stopped
 
   order-service:
@@ -108,6 +109,7 @@ services:
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
       - SPRING_FLYWAY_ENABLED=false
+      - SPRING_AUTOCONFIGURE_EXCLUDE=org.redisson.spring.starter.RedissonAutoConfigurationV2
     restart: unless-stopped
 
   payment-service:

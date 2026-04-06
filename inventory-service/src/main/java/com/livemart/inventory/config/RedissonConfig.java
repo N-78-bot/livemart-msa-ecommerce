@@ -3,10 +3,13 @@ package com.livemart.inventory.config;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.config.SingleServerConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+
+import java.net.URI;
 
 @Configuration
 public class RedissonConfig {
@@ -24,17 +27,40 @@ public class RedissonConfig {
     @Primary
     public RedissonClient redissonClient() {
         Config config = new Config();
-        String address = (redisUrl != null && !redisUrl.isBlank())
-                ? redisUrl
-                : "redis://" + redisHost + ":" + redisPort;
-        config.useSingleServer()
-                .setAddress(address)
+        SingleServerConfig serverConfig;
+
+        if (redisUrl != null && !redisUrl.isBlank()) {
+            try {
+                URI uri = new URI(redisUrl);
+                boolean tls = "rediss".equals(uri.getScheme());
+                String scheme = tls ? "rediss" : "redis";
+                String address = scheme + "://" + uri.getHost() + ":" + uri.getPort();
+
+                serverConfig = config.useSingleServer().setAddress(address);
+
+                if (uri.getUserInfo() != null) {
+                    String[] userInfo = uri.getUserInfo().split(":", 2);
+                    if (userInfo.length == 2) {
+                        serverConfig.setPassword(userInfo[1]);
+                    }
+                }
+            } catch (Exception e) {
+                // fallback: pass URL as-is
+                serverConfig = config.useSingleServer().setAddress(redisUrl);
+            }
+        } else {
+            serverConfig = config.useSingleServer()
+                    .setAddress("redis://" + redisHost + ":" + redisPort);
+        }
+
+        serverConfig
                 .setConnectionPoolSize(20)
                 .setConnectionMinimumIdleSize(5)
                 .setConnectTimeout(10000)
                 .setTimeout(3000)
                 .setRetryAttempts(3)
                 .setRetryInterval(1500);
+
         return Redisson.create(config);
     }
 }
