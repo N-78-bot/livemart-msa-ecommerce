@@ -50,7 +50,7 @@ services:
       - OAUTH2_BASE_URL=${OAUTH2_BASE_URL}
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
-      - SPRING_FLYWAY_VALIDATE_ON_MIGRATE=false
+      - SPRING_FLYWAY_ENABLED=false
     restart: unless-stopped
 
   product-service:
@@ -67,7 +67,7 @@ services:
       - REDIS_URL=${REDIS_URL}
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
-      - SPRING_FLYWAY_VALIDATE_ON_MIGRATE=false
+      - SPRING_FLYWAY_ENABLED=false
     restart: unless-stopped
 
   order-service:
@@ -85,7 +85,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
-      - SPRING_FLYWAY_VALIDATE_ON_MIGRATE=false
+      - SPRING_FLYWAY_ENABLED=false
     restart: unless-stopped
 
   inventory-service:
@@ -102,7 +102,7 @@ services:
       - REDIS_URL=${REDIS_URL}
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
-      - SPRING_FLYWAY_VALIDATE_ON_MIGRATE=false
+      - SPRING_FLYWAY_ENABLED=false
     restart: unless-stopped
 
   payment-service:
@@ -120,7 +120,7 @@ services:
       - TOSS_SECRET_KEY=${TOSS_SECRET_KEY}
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
-      - SPRING_FLYWAY_VALIDATE_ON_MIGRATE=false
+      - SPRING_FLYWAY_ENABLED=false
     restart: unless-stopped
 
   ai-service:

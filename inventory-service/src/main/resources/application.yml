@@ -113,8 +113,9 @@ spring:
     url: ${DATABASE_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-  redis:
-    url: ${REDIS_URL}
+  data:
+    redis:
+      url: ${REDIS_URL}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 

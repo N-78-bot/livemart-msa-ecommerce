@@ -1,4 +1,4 @@
-package com.livemart.product.config;
+package com.livemart.inventory.config;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -6,6 +6,7 @@ import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class RedissonConfig {
@@ -20,6 +21,7 @@ public class RedissonConfig {
     private int redisPort;
 
     @Bean
+    @Primary
     public RedissonClient redissonClient() {
         Config config = new Config();
         String address = (redisUrl != null && !redisUrl.isBlank())
@@ -27,14 +29,12 @@ public class RedissonConfig {
                 : "redis://" + redisHost + ":" + redisPort;
         config.useSingleServer()
                 .setAddress(address)
-                .setConnectionPoolSize(50)
-                .setConnectionMinimumIdleSize(10)
-                .setIdleConnectionTimeout(10000)
+                .setConnectionPoolSize(20)
+                .setConnectionMinimumIdleSize(5)
                 .setConnectTimeout(10000)
                 .setTimeout(3000)
                 .setRetryAttempts(3)
                 .setRetryInterval(1500);
-
         return Redisson.create(config);
     }
 }
