@@ -42,14 +42,17 @@ public class ProductGrpcClient {
             log.warn("gRPC 서버 주소 파싱 실패, 기본값 사용: localhost:9095");
         }
 
-        channel = ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext()
-                .keepAliveTime(30, TimeUnit.SECONDS)
-                .keepAliveTimeout(10, TimeUnit.SECONDS)
-                .maxInboundMessageSize(10 * 1024 * 1024) // 10MB
-                .build();
-
-        log.info("gRPC 채널 초기화 완료: {}:{}", host, port);
+        try {
+            channel = ManagedChannelBuilder.forAddress(host, port)
+                    .usePlaintext()
+                    .keepAliveTime(30, TimeUnit.SECONDS)
+                    .keepAliveTimeout(10, TimeUnit.SECONDS)
+                    .maxInboundMessageSize(10 * 1024 * 1024) // 10MB
+                    .build();
+            log.info("gRPC 채널 초기화 완료: {}:{}", host, port);
+        } catch (Exception e) {
+            log.warn("gRPC 채널 초기화 실패 (서비스 계속 시작): {}", e.getMessage());
+        }
     }
 
     @PreDestroy
