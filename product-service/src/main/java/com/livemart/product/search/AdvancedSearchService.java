@@ -88,25 +88,31 @@ public class AdvancedSearchService {
                 final double max = criteria.getMaxPrice().doubleValue();
                 mustQueries.add(Query.of(q -> q
                     .range(r -> r
-                        .field("price")
-                        .gte(JsonData.of(min))
-                        .lte(JsonData.of(max))
+                        .untyped(u -> u
+                            .field("price")
+                            .gte(JsonData.of(min))
+                            .lte(JsonData.of(max))
+                        )
                     )
                 ));
             } else if (criteria.getMinPrice() != null) {
                 final double min = criteria.getMinPrice().doubleValue();
                 mustQueries.add(Query.of(q -> q
                     .range(r -> r
-                        .field("price")
-                        .gte(JsonData.of(min))
+                        .untyped(u -> u
+                            .field("price")
+                            .gte(JsonData.of(min))
+                        )
                     )
                 ));
             } else if (criteria.getMaxPrice() != null) {
                 final double max = criteria.getMaxPrice().doubleValue();
                 mustQueries.add(Query.of(q -> q
                     .range(r -> r
-                        .field("price")
-                        .lte(JsonData.of(max))
+                        .untyped(u -> u
+                            .field("price")
+                            .lte(JsonData.of(max))
+                        )
                     )
                 ));
             }
@@ -126,8 +132,10 @@ public class AdvancedSearchService {
             if (criteria.isInStockOnly()) {
                 mustQueries.add(Query.of(q -> q
                     .range(r -> r
-                        .field("stockQuantity")
-                        .gt(JsonData.of(0))
+                        .untyped(u -> u
+                            .field("stockQuantity")
+                            .gt(JsonData.of(0))
+                        )
                     )
                 ));
             }
