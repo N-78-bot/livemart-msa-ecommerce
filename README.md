@@ -16,7 +16,7 @@
 
 | | 링크 |
 |---|---|
-| **🌐 프론트엔드 데모** | [livemart-gpzzy4mj5-parkmin-jes-projects.vercel.app](https://livemart-gpzzy4mj5-parkmin-jes-projects.vercel.app) |
+| **🌐 프론트엔드 데모** | [livemart-parkmin-jes-projects.vercel.app](https://livemart-parkmin-jes-projects.vercel.app) |
 | **⚙️ API 서버 (GCP VM)** | [34.64.189.54:8888/actuator/health](http://34.64.189.54:8888/actuator/health) |
 | **📖 블로그 — Saga+Outbox 구현기** | [docs/blog/01-saga-outbox-패턴-실전-구현기.md](docs/blog/01-saga-outbox-패턴-실전-구현기.md) |
 | **📖 블로그 — 결제 취약점 발견·수정** | [docs/blog/02-결제-취약점-발견-수정기.md](docs/blog/02-결제-취약점-발견-수정기.md) |
