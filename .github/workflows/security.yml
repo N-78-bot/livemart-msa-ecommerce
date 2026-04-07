@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -171,7 +171,7 @@ jobs:
           fetch-depth: 0  # 전체 히스토리 (SonarCloud 블레임 분석용)
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
