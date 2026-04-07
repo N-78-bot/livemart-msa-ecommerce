@@ -2,12 +2,12 @@
 
 [![CI](https://github.com/parkmin-je/livemart-msa-ecommerce/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/parkmin-je/livemart-msa-ecommerce/actions/workflows/ci.yml)
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.1-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.6-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-1.28-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> Java 21 + Spring Boot 3.4 + Next.js 15로 구현한 MSA 이커머스 포트폴리오 프로젝트.
+> Java 21 + Spring Boot 3.3 + Next.js 15로 구현한 MSA 이커머스 포트폴리오 프로젝트.
 > Saga, Outbox, CQRS, Event Sourcing 등 분산 시스템 패턴을 직접 구현했습니다.
 
 ---
@@ -17,6 +17,7 @@
 | | 링크 |
 |---|---|
 | **🌐 프론트엔드 데모** | [livemart-gpzzy4mj5-parkmin-jes-projects.vercel.app](https://livemart-gpzzy4mj5-parkmin-jes-projects.vercel.app) |
+| **⚙️ API 서버 (GCP VM)** | [34.64.189.54:8888/actuator/health](http://34.64.189.54:8888/actuator/health) |
 | **📖 블로그 — Saga+Outbox 구현기** | [docs/blog/01-saga-outbox-패턴-실전-구현기.md](docs/blog/01-saga-outbox-패턴-실전-구현기.md) |
 | **📖 블로그 — 결제 취약점 발견·수정** | [docs/blog/02-결제-취약점-발견-수정기.md](docs/blog/02-결제-취약점-발견-수정기.md) |
 | **📖 블로그 — 분산 SSE 구현기** | [docs/blog/03-redis-pubsub-분산-SSE-구현기.md](docs/blog/03-redis-pubsub-분산-SSE-구현기.md) |
@@ -31,38 +32,30 @@ graph TB
     Client["🌐 Next.js 15<br/>(React 19 · Turbopack)"]
 
     subgraph GW["API Layer"]
-        Gateway["⚡ API Gateway<br/>Spring Cloud Gateway<br/>JWT 검증 · Rate Limiting<br/>Circuit Breaker · Eureka"]
+        Gateway["⚡ API Gateway<br/>Spring Cloud Gateway<br/>JWT 검증 · Rate Limiting<br/>Circuit Breaker"]
     end
 
-    subgraph SVC["Service Layer (10개 마이크로서비스)"]
+    subgraph SVC["Service Layer (7개 마이크로서비스)"]
         direction LR
         US["👤 user-service<br/>JWT · OAuth2 · MFA(TOTP)"]
         PS["📦 product-service<br/>Elasticsearch · gRPC서버 · Redis"]
         OS["🛒 order-service<br/>Saga · Outbox · CQRS · Event Sourcing"]
         PAY["💳 payment-service<br/>Toss · Idempotency Key"]
         INV["📊 inventory-service<br/>Redisson 분산 락"]
-        NS["🔔 notification-service<br/>Redis Pub/Sub · SSE"]
         AI["🤖 ai-service<br/>Spring AI 1.0 · OpenRouter"]
-        AN["📈 analytics-service<br/>A/B Test"]
     end
 
     subgraph INFRA["Infrastructure"]
         direction LR
-        KF["☁️ Apache Kafka<br/>+ DLQ · 병렬 소비"]
-        RD["⚡ Redis<br/>Cache · Session · Pub/Sub"]
-        ES["🔍 Elasticsearch<br/>nori 형태소 분석기"]
-        PG[("🗄️ PostgreSQL × 6<br/>서비스별 DB 분리")]
+        RD["⚡ Redis (Upstash)<br/>Cache · Session · Rate Limit"]
+        PG[("🗄️ PostgreSQL (Neon)<br/>서비스별 DB 분리")]
     end
 
     Client -->|"HTTPS"| Gateway
-    Gateway --> US & PS & OS & PAY & INV & NS & AI & AN
+    Gateway --> US & PS & OS & PAY & INV & AI
     OS -->|"gRPC (Protobuf)"| PS
-    OS & PAY & INV -->|"이벤트 발행"| KF
-    KF -->|"이벤트 구독"| NS & INV
     PS & US -->|"Cache-Aside"| RD
-    NS -->|"SSE 브로드캐스트"| RD
-    PS --> ES
-    US & PS & OS & PAY & INV & AN --> PG
+    US & PS & OS & PAY & INV --> PG
 ```
 
 ---
@@ -109,13 +102,13 @@ service ProductGrpcService {
 
 ### 3. Redis Pub/Sub 분산 SSE
 
-단일 서버에서 SSE는 간단하지만, **K8s HPA로 스케일아웃하면 포드가 여러 개**라 특정 포드에 연결된 클라이언트만 이벤트를 받는 문제가 생깁니다. **Redis Pub/Sub**으로 모든 포드에 브로드캐스팅해서 해결했습니다.
+단일 서버에서 SSE는 간단하지만, **수평 확장 시 포드가 여러 개**라 특정 포드에 연결된 클라이언트만 이벤트를 받는 문제가 생깁니다. **Redis Pub/Sub**으로 모든 인스턴스에 브로드캐스팅해서 해결했습니다.
 
 ```java
-// 이벤트 발행 (어느 포드에서든)
+// 이벤트 발행 (어느 인스턴스에서든)
 redisTemplate.convertAndSend("notifications:" + userId, payload);
 
-// 모든 포드의 구독자가 받아서 SSE로 전달
+// 모든 인스턴스의 구독자가 받아서 SSE로 전달
 public void onMessage(Message message, byte[] pattern) {
     emitters.getOrDefault(userId, List.of())
             .forEach(emitter -> emitter.send(SseEmitter.event().data(data)));
@@ -152,6 +145,23 @@ factory.setConcurrency(3); // 파티션 3개 병렬 소비
 
 ---
 
+### 6. Redisson 분산 락 — 재고 Race Condition 방지
+
+동시 주문 시 재고가 음수가 되는 Race Condition을 **Redisson 분산 락**으로 방지했습니다. Upstash Redis(TLS rediss://)와 연동하여 클라우드 환경에서도 동작합니다.
+
+```java
+RLock lock = redissonClient.getLock("inventory:lock:" + productId);
+try {
+    if (lock.tryLock(5, 3, TimeUnit.SECONDS)) {
+        // 재고 차감 로직
+    }
+} finally {
+    lock.unlock();
+}
+```
+
+---
+
 ## 기술 스택
 
 ### 백엔드
@@ -159,10 +169,10 @@ factory.setConcurrency(3); // 파티션 3개 병렬 소비
 | 분류 | 기술 |
 |------|------|
 | Language | Java 21 (Virtual Threads / Project Loom) |
-| Framework | Spring Boot 3.4.1 · Spring Cloud 2024.0.0 |
+| Framework | Spring Boot 3.3.6 · Spring Cloud 2023.0.3 |
 | API | REST · gRPC · WebSocket · SSE · GraphQL |
 | 메시징 | Apache Kafka (DLQ · 병렬 소비 · Outbox) |
-| 캐싱/세션 | Redis (Cache-Aside · Token Bucket · Pub/Sub) |
+| 캐싱/세션 | Redis Upstash (Cache-Aside · Rate Limiting · Pub/Sub) |
 | 검색 | Elasticsearch 8 (nori 한글 형태소) |
 | 인증 | JWT httpOnly · OAuth2 PKCE (Google/Kakao/Naver) · MFA (TOTP · WebAuthn) |
 | 결제 | Toss Payments (서버 금액 검증 · Idempotency Key) |
@@ -179,7 +189,7 @@ factory.setConcurrency(3); // 파티션 3개 병렬 소비
 | UI | React 19 · Tailwind CSS 4 · 웜크림 디자인 시스템 |
 | 상태 관리 | Zustand · TanStack Query v5 |
 | 결제 | Toss Payments SDK |
-| 보안 헤더 | CSP · HSTS · X-Frame-Options (미들웨어) |
+| 보안 헤더 | CSP · HSTS · X-Frame-Options |
 | 타입 | TypeScript 5.7 (strict mode) |
 
 ### 테스트
@@ -198,14 +208,12 @@ factory.setConcurrency(3); // 파티션 3개 병렬 소비
 
 | 분류 | 기술 |
 |------|------|
-| 컨테이너 | Docker · Kubernetes 1.28 · Istio mTLS STRICT |
-| CI/CD | GitHub Actions → GHCR → K8s (ArgoCD GitOps) |
-| IaC | Terraform 1.9 (AWS EKS · RDS · ElastiCache · MSK · OpenSearch) |
-| 오토스케일링 | HPA (CPU 70% · Memory 80%) |
-| 배포 전략 | Blue-Green (무중단 배포) |
-| 모니터링 | Prometheus + Grafana |
-| 분산 추적 | OpenTelemetry → Zipkin |
-| 보안 스캔 | Trivy · Gitleaks · CodeQL · OWASP ZAP |
+| 컨테이너 | Docker Compose (GCP VM) |
+| CI/CD | GitHub Actions |
+| 클라우드 | GCP Compute Engine · Vercel (프론트엔드) |
+| DB | Neon PostgreSQL (서비스별 독립 DB) |
+| Cache | Upstash Redis (TLS) |
+| 모니터링 | OpenTelemetry (Jaeger) |
 
 ---
 
@@ -214,12 +222,11 @@ factory.setConcurrency(3); // 파티션 3개 병렬 소비
 | 취약점 | 대응 |
 |--------|------|
 | A01 Broken Access Control | Spring Security RBAC · IDOR 소유자 검증 |
-| A02 Cryptographic Failures | JWT HS512 · TLS 1.3 · Istio mTLS |
+| A02 Cryptographic Failures | JWT HS512 · TLS 1.3 · Upstash TLS |
 | A03 Injection | JPA 파라미터 바인딩 · ES 인젝션 방어 |
 | A07 Auth Failures | OAuth2 PKCE · Redis 토큰 블랙리스트 · MFA |
-| A08 Integrity Failures | 결제 금액 서버 검증 · Docker 이미지 서명 |
-| A09 Logging & Monitoring | ELK Stack · Grafana 알림 |
-| 자동 스캔 | Trivy + Gitleaks (모든 push) · CodeQL (PR) · ZAP (주간) |
+| A08 Integrity Failures | 결제 금액 서버 검증 · Idempotency Key |
+| A09 Logging & Monitoring | OpenTelemetry 분산 추적 |
 
 ---
 
@@ -227,14 +234,11 @@ factory.setConcurrency(3); // 파티션 3개 병렬 소비
 
 ```
 ├── api-gateway/           Spring Cloud Gateway · Rate Limiting · JWT 검증
-├── eureka-server/         서비스 레지스트리
 ├── user-service/          회원 · JWT · OAuth2 · MFA(TOTP/WebAuthn) · 위시리스트
-├── product-service/       상품 · Elasticsearch · gRPC 서버 · Redis 캐싱 · S3
+├── product-service/       상품 · Elasticsearch · gRPC 서버 · Redis 캐싱
 ├── order-service/         주문 · Saga · Outbox · CQRS · 쿠폰 · 반품 · Event Sourcing
 ├── payment-service/       Toss 결제 · 환불 · Kafka DLQ · 금액 서버 검증
 ├── inventory-service/     재고 · Redisson 분산 락
-├── analytics-service/     매출 분석 · A/B 테스트
-├── notification-service/  알림 · Redis Pub/Sub SSE
 ├── ai-service/            Spring AI 1.0 · OpenRouter
 └── common/                Outbox · Event Sourcing · RFC 7807 에러 · 멱등성
 ```
@@ -249,7 +253,7 @@ factory.setConcurrency(3); // 파티션 3개 병렬 소비
 Java 21+  ·  Docker Desktop  ·  Node.js 20+
 ```
 
-### 빠른 시작
+### 로컬 개발 환경
 
 ```bash
 # 1. 환경 변수 설정
@@ -259,18 +263,35 @@ cp .env.example .env
 # 2. 인프라 기동 (PostgreSQL · Redis · Kafka · Elasticsearch)
 docker-compose -f docker-compose.infra.yml up -d
 
-# 3. 백엔드 서비스 순차 기동
-./gradlew :eureka-server:bootRun &
+# 3. 백엔드 서비스 기동
 ./gradlew :api-gateway:bootRun &
-./gradlew :user-service:bootRun -Dspring.profiles.active=local &
-./gradlew :product-service:bootRun -Dspring.profiles.active=local &
-./gradlew :order-service:bootRun -Dspring.profiles.active=local &
-./gradlew :payment-service:bootRun -Dspring.profiles.active=local &
+./gradlew :user-service:bootRun &
+./gradlew :product-service:bootRun &
+./gradlew :order-service:bootRun &
+./gradlew :payment-service:bootRun &
 
 # 4. 프론트엔드
 cd frontend && npm install && npm run dev
 # → http://localhost:3000
 ```
+
+### GCP VM 배포 (현재 운영 중)
+
+7개 마이크로서비스가 GCP VM에서 Docker Compose로 운영되고 있습니다.
+
+```bash
+# GCP VM에서 실행
+git pull origin main
+docker compose -f docker-compose.prod.yml up -d
+
+# 헬스체크
+curl http://34.64.189.54:8888/actuator/health
+# → {"status":"UP"}
+```
+
+**외부 서비스 연동:**
+- PostgreSQL: Neon (서비스별 독립 DB)
+- Redis: Upstash (TLS, rediss://)
 
 ### 테스트 계정
 
@@ -281,18 +302,16 @@ cd frontend && npm install && npm run dev
 
 ### 포트 맵
 
-| 서비스 | 포트 |
+| 서비스 | 로컬 포트 |
 |--------|------|
 | Next.js Frontend | **3000** |
-| API Gateway | 8888 |
-| Eureka Dashboard | 8761 |
+| API Gateway | **8888** |
 | user-service | 8085 |
-| product-service | 8082 |
-| order-service | 8083 |
-| payment-service | 8084 |
+| product-service | 8086 |
+| order-service | 8087 |
+| payment-service | 8089 |
 | inventory-service | 8088 |
-| Grafana | 3001 |
-| Zipkin | 9411 |
+| ai-service | 8090 |
 
 ### 테스트 실행
 
@@ -333,18 +352,10 @@ k6 run tests/load/k6-order-flow.js
 |--------|---------|
 | ![홈](01_homepage.png) | ![상품](02_products_page.png) |
 
-| 정렬/필터 | 리스트뷰 |
-|--------|---------|
-| ![정렬](03_products_sorted.png) | ![리스트](04_products_listview.png) |
-
-| 관리자 대시보드 | 판매자 페이지 |
-|--------|---------|
-| ![관리자](13_admin_dashboard.png) | ![판매자](14_seller_page.png) |
-
 </details>
 
 ---
 
 ## 개발 환경
 
-- **OS**: Windows 11 · **IDE**: IntelliJ IDEA · **JDK**: OpenJDK 21 · **Build**: Gradle 8.5
+- **OS**: Windows 11 · **IDE**: IntelliJ IDEA · **JDK**: OpenJDK 21 · **Build**: Gradle 8.10
