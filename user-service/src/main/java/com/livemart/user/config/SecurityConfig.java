@@ -119,9 +119,6 @@ public class SecurityConfig {
                 .authorizationEndpoint(endpoint -> endpoint
                     .authorizationRequestRepository(cookieAuthorizationRequestRepository)
                     .authorizationRequestResolver(oAuth2AuthorizationRequestResolver()))
-                .tokenEndpoint(token -> token)
-                .redirectionEndpoint(redir -> redir
-                    .baseUri("/login/oauth2/code/*"))
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(customOAuth2UserService))
                 .successHandler(oAuth2SuccessHandler)
