@@ -63,7 +63,8 @@ export default function OnboardingPage() {
       } else if (res.status === 401) {
         window.location.href = '/auth';
       } else {
-        setError('정보 저장에 실패했습니다. 다시 시도해주세요.');
+        const body = await res.text().catch(() => '');
+        setError(`정보 저장에 실패했습니다. (${res.status}) ${body.slice(0, 120)}`);
       }
     } catch {
       setError('서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
