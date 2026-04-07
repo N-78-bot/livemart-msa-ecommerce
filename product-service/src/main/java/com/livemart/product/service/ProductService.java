@@ -211,19 +211,23 @@ public class ProductService {
     }
 
     private void syncToElasticsearch(Product product) {
-        ProductDocument document = ProductDocument.builder()
-                .id(String.valueOf(product.getId()))
-                .name(product.getName())
-                .description(product.getDescription())
-                .price(product.getPrice())
-                .stockQuantity(product.getStockQuantity())
-                .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
-                .status(product.getStatus().name())
-                .imageUrl(product.getImageUrl())
-                .sellerId(product.getSellerId())
-                .build();
-
-        productSearchRepository.save(document);
+        try {
+            if (productSearchRepository == null) return;
+            ProductDocument document = ProductDocument.builder()
+                    .id(String.valueOf(product.getId()))
+                    .name(product.getName())
+                    .description(product.getDescription())
+                    .price(product.getPrice())
+                    .stockQuantity(product.getStockQuantity())
+                    .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
+                    .status(product.getStatus().name())
+                    .imageUrl(product.getImageUrl())
+                    .sellerId(product.getSellerId())
+                    .build();
+            productSearchRepository.save(document);
+        } catch (Exception e) {
+            log.warn("Elasticsearch 동기화 실패 (무시): {}", e.getMessage());
+        }
     }
 
     private void publishProductEvent(Product product, ProductEvent.EventType eventType) {
