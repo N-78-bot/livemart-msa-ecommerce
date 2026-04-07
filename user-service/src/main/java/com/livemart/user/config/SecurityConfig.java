@@ -1,6 +1,7 @@
 package com.livemart.user.config;
 
 import com.livemart.user.oauth.CustomOAuth2UserService;
+import com.livemart.user.oauth.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.livemart.user.oauth.OAuth2SuccessHandler;
 import com.livemart.user.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,12 +38,16 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
 
     @Autowired
     private ClientRegistrationRepository clientRegistrationRepository;
 
     @Value("${oauth2.redirect-uri:http://localhost:3002/auth/callback}")
     private String oauth2RedirectUri;
+
+    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:3002}")
+    private String corsAllowedOrigins;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -52,9 +57,18 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
+        List<String> origins = new java.util.ArrayList<>(List.of(
             "http://localhost", "http://localhost:3000", "http://localhost:3001", "http://localhost:3002"
         ));
+        if (corsAllowedOrigins != null && !corsAllowedOrigins.isBlank()) {
+            for (String origin : corsAllowedOrigins.split(",")) {
+                String trimmed = origin.trim();
+                if (!trimmed.isEmpty() && !origins.contains(trimmed)) {
+                    origins.add(trimmed);
+                }
+            }
+        }
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
@@ -103,7 +117,11 @@ public class SecurityConfig {
             )
             .oauth2Login(oauth2 -> oauth2
                 .authorizationEndpoint(endpoint -> endpoint
+                    .authorizationRequestRepository(cookieAuthorizationRequestRepository)
                     .authorizationRequestResolver(oAuth2AuthorizationRequestResolver()))
+                .tokenEndpoint(token -> token)
+                .redirectionEndpoint(redir -> redir
+                    .baseUri("/login/oauth2/code/*"))
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(customOAuth2UserService))
                 .successHandler(oAuth2SuccessHandler)
