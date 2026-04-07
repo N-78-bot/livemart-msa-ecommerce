@@ -45,7 +45,7 @@ grpc                   = "1.79.0"
 protobuf-plugin        = "0.9.4"
 
 # ── Firebase ──────────────────────────────────────────────────
-firebase               = "9.4.2"
+firebase               = "9.8.0"
 
 [libraries]
 # SpringDoc (핵심: springdoc 3.x ≠ Spring Boot 3.x)
