@@ -68,10 +68,15 @@ const nextConfig = {
 
   // ── API 프록시 리라이트 ───────────────────────────────────
   async rewrites() {
-    // API_GATEWAY_URL이 설정된 경우 실제 백엔드로 프록시 (로컬·Vercel 공통)
-    // 미설정 시 GCP VM 백엔드로 폴백
     const GCP_API = 'http://34.64.189.54:8888';
-    const apiBase = process.env.API_GATEWAY_URL || process.env.NEXT_PUBLIC_API_URL || GCP_API;
+
+    let apiBase = process.env.API_GATEWAY_URL || process.env.NEXT_PUBLIC_API_URL || GCP_API;
+
+    // Railway/Render 내부 호스트명(.internal, localhost)은 Vercel에서 private IP로 해석됨
+    // → 이 경우 GCP VM으로 강제 전환
+    const isPrivateHost = /localhost|127\.0\.0\.1|\.internal/.test(apiBase);
+    if (isPrivateHost) apiBase = GCP_API;
+
     if (!apiBase) return [];
 
     // SSE 스트리밍은 notification-service 직접 연결 (API Gateway kubectl port-forward 연결 끊김 방지)
