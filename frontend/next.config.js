@@ -46,14 +46,12 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://cdn.livemart.com http://localhost:* https:",
-              "connect-src 'self' http://localhost:* ws://localhost:* https://api.livemart.com https://*.tosspayments.com https://t1.daumcdn.net",
+              "connect-src 'self' http://localhost:* ws://localhost:* http://34.64.189.54:8888 https://api.livemart.com https://*.tosspayments.com https://t1.daumcdn.net",
               "frame-src https://js.tosspayments.com https://pay.toss.im https://postcode.map.daum.net",
               "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",
-              // upgrade-insecure-requests는 HTTPS 프로덕션 환경에서만 활성화
-              // 로컬 HTTP(localhost)에서는 fetch()가 차단되므로 제외
-              ...(process.env.NODE_ENV === 'production' ? ["upgrade-insecure-requests"] : []),
+              // upgrade-insecure-requests 제거: GCP VM 백엔드가 HTTP이므로 강제 업그레이드 시 차단됨
             ].join('; '),
           },
         ],
@@ -71,8 +69,9 @@ const nextConfig = {
   // ── API 프록시 리라이트 ───────────────────────────────────
   async rewrites() {
     // API_GATEWAY_URL이 설정된 경우 실제 백엔드로 프록시 (로컬·Vercel 공통)
-    // 설정되지 않은 경우 내부 route.ts 데모 핸들러로 처리
-    const apiBase = process.env.API_GATEWAY_URL || process.env.NEXT_PUBLIC_API_URL;
+    // 미설정 시 GCP VM 백엔드로 폴백
+    const GCP_API = 'http://34.64.189.54:8888';
+    const apiBase = process.env.API_GATEWAY_URL || process.env.NEXT_PUBLIC_API_URL || GCP_API;
     if (!apiBase) return [];
 
     // SSE 스트리밍은 notification-service 직접 연결 (API Gateway kubectl port-forward 연결 끊김 방지)

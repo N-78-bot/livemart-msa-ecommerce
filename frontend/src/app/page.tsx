@@ -85,7 +85,7 @@ async function fetchProducts(): Promise<Product[]> {
   // 주의: VERCEL_URL은 Vercel 자체 도메인이므로 API URL로 사용하면 안 됨
   const apiBase = process.env.API_GATEWAY_URL
     || process.env.NEXT_PUBLIC_API_URL
-    || 'http://localhost:8888';
+    || 'http://34.64.189.54:8888';
   try {
     const res = await fetch(`${apiBase}/api/products?page=0&size=20`, {
       next: { revalidate: 60 },
