@@ -90,7 +90,7 @@ export function AuthForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: form.email, code: form.verifyCode }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.verified) {
         toast.success('이메일 인증이 완료되었습니다');
         setCodeVerified(true);
