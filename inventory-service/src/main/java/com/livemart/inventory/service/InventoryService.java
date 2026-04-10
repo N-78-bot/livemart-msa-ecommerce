@@ -74,7 +74,8 @@ public class InventoryService {
             return InventoryResponse.from(inventory);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Lock acquisition interrupted", e);
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("재고 락 획득 중 인터럽트 발생", e);
         } finally {
             if (lock.isHeldByCurrentThread()) lock.unlock();
         }
@@ -142,7 +143,7 @@ public class InventoryService {
         RLock lock = redissonClient.getLock(lockKey);
         try {
             if (!lock.tryLock(3, 10, TimeUnit.SECONDS)) {
-                throw new RuntimeException("재고 락 획득 실패: 상품 ID " + productId);
+                throw new IllegalStateException("재고 락 획득 실패: 상품 ID " + productId);
             }
 
             Inventory inventory = inventoryRepository.findByProductId(productId)
@@ -164,7 +165,7 @@ public class InventoryService {
             return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("재고 락 대기 중 인터럽트 발생", e);
+            throw new IllegalStateException("재고 락 대기 중 인터럽트 발생", e);
         } finally {
             if (lock.isHeldByCurrentThread()) lock.unlock();
         }
