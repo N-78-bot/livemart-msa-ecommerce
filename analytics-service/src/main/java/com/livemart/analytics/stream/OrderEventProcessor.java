@@ -1,5 +1,7 @@
 package com.livemart.analytics.stream;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
@@ -188,48 +190,44 @@ public class OrderEventProcessor {
             .to("enriched-orders");
     }
 
-    // Helper Methods
+    // Helper Methods — Jackson ObjectMapper 사용
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private double extractAmount(String jsonValue) {
         try {
-            // 간단한 JSON 파싱 (실제로는 Jackson 사용 권장)
-            String amountStr = jsonValue.substring(
-                jsonValue.indexOf("\"amount\":") + 9,
-                jsonValue.indexOf(",", jsonValue.indexOf("\"amount\":"))
-            );
-            return Double.parseDouble(amountStr);
+            JsonNode node = MAPPER.readTree(jsonValue);
+            return node.path("totalAmount").asDouble(
+                   node.path("amount").asDouble(0.0));
         } catch (Exception e) {
-            log.error("Failed to extract amount", e);
+            log.error("Failed to extract amount from JSON", e);
             return 0.0;
         }
     }
 
     private String extractUserId(String jsonValue) {
         try {
-            String userIdStr = jsonValue.substring(
-                jsonValue.indexOf("\"userId\":") + 10,
-                jsonValue.indexOf(",", jsonValue.indexOf("\"userId\":"))
-            );
-            return userIdStr.replace("\"", "");
+            JsonNode node = MAPPER.readTree(jsonValue);
+            return node.path("userId").asText("unknown");
         } catch (Exception e) {
-            log.error("Failed to extract userId", e);
+            log.error("Failed to extract userId from JSON", e);
             return "unknown";
         }
     }
 
     private java.util.List<String> extractProductIds(String jsonValue) {
-        // 간단한 구현 (실제로는 JSON 파서 사용)
         java.util.List<String> productIds = new java.util.ArrayList<>();
-
         try {
-            int itemsStart = jsonValue.indexOf("\"items\":[");
-            if (itemsStart > 0) {
-                String itemsStr = jsonValue.substring(itemsStart + 9);
-                // productId 추출 로직
-                productIds.add("1"); // 시뮬레이션
+            JsonNode node = MAPPER.readTree(jsonValue);
+            JsonNode items = node.path("items");
+            if (items.isArray()) {
+                for (JsonNode item : items) {
+                    String productId = item.path("productId").asText();
+                    if (!productId.isEmpty()) productIds.add(productId);
+                }
             }
         } catch (Exception e) {
-            log.error("Failed to extract productIds", e);
+            log.error("Failed to extract productIds from JSON", e);
         }
 
         return productIds;

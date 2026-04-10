@@ -68,14 +68,25 @@ public class DistributedCacheService {
                 redisTemplate.delete(lockKey);
             }
         } else {
-            // 다른 스레드가 로딩 중: 잠시 대기 후 재시도
-            try {
-                Thread.sleep(100);
-                return getOrLoad(key, loader, ttl);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return loader.get();
+            // 다른 스레드가 로딩 중: 최대 5회 폴링 후 직접 로딩 (스택 오버플로우 방지)
+            for (int i = 0; i < 5; i++) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+                Object cached = redisTemplate.opsForValue().get(key);
+                if (cached != null) {
+                    log.debug("Cache hit after wait: key={}", key);
+                    @SuppressWarnings("unchecked")
+                    T result = (T) cached;
+                    return result;
+                }
             }
+            // 타임아웃: 직접 DB 조회 (캐시 없이)
+            log.warn("Cache lock timeout, loading directly: key={}", key);
+            return loader.get();
         }
     }
 

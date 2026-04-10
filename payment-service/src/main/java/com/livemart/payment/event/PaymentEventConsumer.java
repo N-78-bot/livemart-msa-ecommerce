@@ -83,29 +83,19 @@ public class PaymentEventConsumer {
     }
 
     /**
-     * 환불 처리 - 지수 백오프 재시도 (500ms, 1s, 2s)
+     * 환불 처리 - 예외 전파 → KafkaConfig DefaultErrorHandler 지수 백오프 위임
+     * Kafka 컨슈머 스레드를 직접 블로킹하지 않음
      */
     private boolean refundWithRetry(String orderNumber, String transactionId) {
-        for (int attempt = 1; attempt <= MAX_REFUND_RETRIES; attempt++) {
-            try {
-                PaymentRequest.Refund refundReq = new PaymentRequest.Refund();
-                refundReq.setTransactionId(transactionId);
-                // amount null = 전액 환불
-                paymentService.refundPayment(refundReq);
-                log.info("자동 환불 성공: order={}, txn={}, attempt={}", orderNumber, transactionId, attempt);
-                return true;
-            } catch (Exception e) {
-                log.warn("환불 시도 {}/{} 실패: order={}, txn={}", attempt, MAX_REFUND_RETRIES, orderNumber, transactionId, e);
-                if (attempt < MAX_REFUND_RETRIES) {
-                    try {
-                        Thread.sleep((long) Math.pow(2, attempt - 1) * 500L); // 500ms, 1s, 2s
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        return false;
-                    }
-                }
-            }
+        try {
+            PaymentRequest.Refund refundReq = new PaymentRequest.Refund();
+            refundReq.setTransactionId(transactionId);
+            paymentService.refundPayment(refundReq);
+            log.info("자동 환불 성공: order={}, txn={}", orderNumber, transactionId);
+            return true;
+        } catch (Exception e) {
+            log.warn("환불 처리 실패 (Kafka 에러 핸들러 재시도 위임): order={}, txn={}", orderNumber, transactionId, e);
+            throw e; // DefaultErrorHandler에 위임
         }
-        return false;
     }
 }

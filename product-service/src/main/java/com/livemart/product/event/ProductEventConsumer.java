@@ -120,29 +120,19 @@ public class ProductEventConsumer {
     }
 
     /**
-     * 재고 복원 - 재시도 로직 (지수 백오프)
+     * 재고 복원 - 예외 전파 → KafkaConfig DefaultErrorHandler 지수 백오프 위임
+     * Kafka 컨슈머 스레드를 직접 블로킹하지 않음
      */
     private boolean restoreStockWithRetry(OrderEvent.OrderItemInfo item, String orderNumber, int maxRetries) {
-        for (int attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                productService.restoreStock(item.getProductId(), item.getQuantity());
-                log.info("Stock restored: productId={}, quantity={}, attempt={}",
-                        item.getProductId(), item.getQuantity(), attempt);
-                return true;
-            } catch (Exception e) {
-                log.warn("Stock restore attempt {}/{} failed: productId={}, orderNumber={}",
-                        attempt, maxRetries, item.getProductId(), orderNumber, e);
-                if (attempt < maxRetries) {
-                    try {
-                        Thread.sleep((long) Math.pow(2, attempt) * 500L); // 1s, 2s, 4s
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        return false;
-                    }
-                }
-            }
+        try {
+            productService.restoreStock(item.getProductId(), item.getQuantity());
+            log.info("재고 복원 성공: productId={}, quantity={}", item.getProductId(), item.getQuantity());
+            return true;
+        } catch (Exception e) {
+            log.warn("재고 복원 실패 (Kafka 에러 핸들러 재시도 위임): productId={}, orderNumber={}",
+                    item.getProductId(), orderNumber, e);
+            throw e; // DefaultErrorHandler에 위임
         }
-        return false;
     }
 
     /**
