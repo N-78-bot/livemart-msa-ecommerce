@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
@@ -35,4 +37,25 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.id = :id")
     Optional<Product> findByIdWithCategory(@Param("id") Long id);
+
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.price BETWEEN :minPrice AND :maxPrice")
+    List<Product> findByPriceBetween(@Param("minPrice") BigDecimal minPrice, @Param("maxPrice") BigDecimal maxPrice);
+
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category ORDER BY p.stockQuantity DESC")
+    List<Product> findTopByOrderByStockQuantityDesc(Pageable pageable);
+
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.stockQuantity <= :threshold")
+    List<Product> findByStockQuantityLessThanEqual(@Param("threshold") int threshold);
+
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.category.id = :categoryId")
+    List<Product> findByCategoryIdList(@Param("categoryId") Long categoryId);
+
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.category.id = :categoryId " +
+           "AND p.id != :excludeId AND p.price BETWEEN :minPrice AND :maxPrice ORDER BY ABS(p.price - :targetPrice)")
+    List<Product> findSimilarProducts(@Param("categoryId") Long categoryId,
+                                      @Param("excludeId") Long excludeId,
+                                      @Param("minPrice") BigDecimal minPrice,
+                                      @Param("maxPrice") BigDecimal maxPrice,
+                                      @Param("targetPrice") BigDecimal targetPrice,
+                                      Pageable pageable);
 }

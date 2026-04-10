@@ -62,11 +62,7 @@ public class ReactiveProductQueryService {
     public Flux<ProductResponse> searchByPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
         return Flux.defer(() -> {
             log.info("Searching products by price range: {} - {}", minPrice, maxPrice);
-            return Flux.fromIterable(
-                productRepository.findAll().stream()
-                    .filter(p -> p.getPrice().compareTo(minPrice) >= 0 && p.getPrice().compareTo(maxPrice) <= 0)
-                    .toList()
-            );
+            return Flux.fromIterable(productRepository.findByPriceBetween(minPrice, maxPrice));
         })
         .map(ProductResponse::from)
         .subscribeOn(Schedulers.boundedElastic())
@@ -80,8 +76,7 @@ public class ReactiveProductQueryService {
     public Flux<ProductResponse> getProductsByCategory(Long categoryId) {
         return Flux.defer(() -> {
             log.info("Fetching products by category reactively: categoryId={}", categoryId);
-            return Flux.fromIterable(productRepository.findAll())
-                    .filter(p -> p.getCategory() != null && p.getCategory().getId().equals(categoryId));
+            return Flux.fromIterable(productRepository.findByCategoryIdList(categoryId));
         })
         .map(ProductResponse::from)
         .subscribeOn(Schedulers.parallel())

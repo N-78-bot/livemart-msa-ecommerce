@@ -141,9 +141,7 @@ public class AutoReplenishmentService {
     // Helper methods
 
     private List<Product> findLowStockProducts() {
-        return productRepository.findAll().stream()
-            .filter(p -> p.getStockQuantity() <= getReorderPoint(p))
-            .collect(Collectors.toList());
+        return productRepository.findByStockQuantityLessThanEqual(DEFAULT_REORDER_POINT);
     }
 
     private int calculateOrderQuantity(int currentStock, int minStock, int maxStock, int safetyStock) {

@@ -4,9 +4,11 @@ import com.livemart.product.dto.ProductResponse;
 import com.livemart.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -129,18 +131,15 @@ public class RecommendationEngine {
                 return Collections.emptyList();
             }
 
-            // 같은 카테고리, 비슷한 가격대 상품 추천
-            return productRepository.findAll().stream()
-                .filter(p -> !p.getId().equals(productId))
-                .filter(p -> p.getCategory() != null &&
-                            p.getCategory().getId().equals(product.getCategory().getId()))
-                .filter(p -> Math.abs(p.getPrice().doubleValue() - product.getPrice().doubleValue())
-                            < product.getPrice().doubleValue() * 0.3)  // ±30% 가격대
-                .sorted((p1, p2) -> Double.compare(
-                    Math.abs(p2.getPrice().doubleValue() - product.getPrice().doubleValue()),
-                    Math.abs(p1.getPrice().doubleValue() - product.getPrice().doubleValue())
-                ))
-                .limit(limit)
+            // 같은 카테고리, ±30% 가격대 상품 추천 (DB 쿼리로 OOM 방지)
+            if (product.getCategory() == null) return Collections.emptyList();
+            BigDecimal price = product.getPrice();
+            BigDecimal margin = price.multiply(BigDecimal.valueOf(0.3));
+            return productRepository.findSimilarProducts(
+                    product.getCategory().getId(), productId,
+                    price.subtract(margin), price.add(margin),
+                    price, PageRequest.of(0, limit)
+                ).stream()
                 .map(ProductResponse::from)
                 .collect(Collectors.toList());
 
@@ -234,9 +233,8 @@ public class RecommendationEngine {
     }
 
     private List<ProductResponse> getPopularProducts(int limit) {
-        return productRepository.findAll().stream()
-            .sorted((p1, p2) -> Integer.compare(p2.getStockQuantity(), p1.getStockQuantity()))
-            .limit(limit)
+        return productRepository.findTopByOrderByStockQuantityDesc(PageRequest.of(0, limit))
+            .stream()
             .map(ProductResponse::from)
             .collect(Collectors.toList());
     }
