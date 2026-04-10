@@ -1,5 +1,6 @@
 package com.livemart.common.ratelimit;
 
+import com.livemart.common.exception.BusinessException;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
@@ -44,7 +45,7 @@ public class RateLimitAspect {
         boolean permission = rateLimiter.acquirePermission();
         if (!permission) {
             log.warn("Rate limit exceeded for key: {}", key);
-            throw new RuntimeException("Rate limit exceeded. Please try again later.");
+            throw new BusinessException("RATE_LIMIT_EXCEEDED", "요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.", 429);
         }
 
         try {

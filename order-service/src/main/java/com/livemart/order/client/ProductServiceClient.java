@@ -1,5 +1,6 @@
 package com.livemart.order.client;
 
+import com.livemart.common.exception.BusinessException;
 import com.livemart.order.dto.ProductInfo;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -53,17 +54,17 @@ public class ProductServiceClient {
     // Fallback methods
     private ProductInfo getProductFallback(Long productId, Exception e) {
         log.error("Product Service unavailable: productId={}", productId, e);
-        throw new RuntimeException("상품 서비스가 일시적으로 이용 불가합니다. 잠시 후 다시 시도해주세요.");
+        throw new BusinessException("SERVICE_UNAVAILABLE", "상품 서비스가 일시적으로 이용 불가합니다. 잠시 후 다시 시도해주세요.", 503);
     }
 
     private void updateStockFallback(Long productId, int newStock, Exception e) {
         log.error("Product Service stock update failed: productId={}", productId, e);
-        throw new RuntimeException("재고 업데이트가 실패했습니다. 잠시 후 다시 시도해주세요.");
+        throw new BusinessException("SERVICE_UNAVAILABLE", "재고 업데이트가 실패했습니다. 잠시 후 다시 시도해주세요.", 503);
     }
 
     private void restoreStockFallback(Long productId, int quantity, Exception e) {
         log.error("Product Service stock restore failed: productId={}", productId, e);
-        throw new RuntimeException("재고 복구가 실패했습니다. 잠시 후 다시 시도해주세요.");
+        throw new BusinessException("SERVICE_UNAVAILABLE", "재고 복구가 실패했습니다. 잠시 후 다시 시도해주세요.", 503);
     }
 
     public record StockUpdateRequest(Integer stockQuantity) {}

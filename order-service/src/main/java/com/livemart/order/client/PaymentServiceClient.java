@@ -1,5 +1,6 @@
 package com.livemart.order.client;
 
+import com.livemart.common.exception.BusinessException;
 import com.livemart.order.dto.PaymentRequest;
 import com.livemart.order.dto.PaymentResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -51,11 +52,11 @@ public class PaymentServiceClient {
 
     private PaymentResponse processPaymentFallback(PaymentRequest request, Exception e) {
         log.error("Failed to process payment: order={}", request.getOrderNumber(), e);
-        throw new RuntimeException("결제 처리에 실패했습니다.");
+        throw BusinessException.paymentFailed("결제 처리에 실패했습니다.");
     }
 
     private void cancelPaymentFallback(String transactionId, String reason, Exception e) {
         log.error("Failed to cancel payment: transactionId={}", transactionId, e);
-        throw new RuntimeException("결제 취소에 실패했습니다.");
+        throw BusinessException.paymentFailed("결제 취소에 실패했습니다.");
     }
 }

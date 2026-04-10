@@ -37,7 +37,7 @@ public class OutboxPublisher implements EventPublisher {
             log.debug("Outbox event saved: type={}, aggregateId={}", event.getEventType(), event.getAggregateId());
         } catch (Exception e) {
             log.error("Failed to save outbox event", e);
-            throw new RuntimeException("Failed to publish event to outbox", e);
+            throw new IllegalStateException("Failed to publish event to outbox", e);
         }
     }
 }

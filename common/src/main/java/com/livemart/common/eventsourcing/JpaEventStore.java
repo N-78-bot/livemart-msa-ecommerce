@@ -48,7 +48,7 @@ public class JpaEventStore {
             repository.save(event);
             log.debug("Event persisted: aggregate={}, type={}, version={}", aggregateId, eventType, version);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to persist event", e);
+            throw new IllegalStateException("Failed to persist event", e);
         }
     }
 
@@ -72,7 +72,7 @@ public class JpaEventStore {
         try {
             return objectMapper.readValue(event.getPayload(), new TypeReference<>() {});
         } catch (Exception e) {
-            throw new RuntimeException("Failed to deserialize event payload", e);
+            throw new IllegalStateException("Failed to deserialize event payload", e);
         }
     }
 
@@ -157,7 +157,7 @@ public class JpaEventStore {
         try {
             return objectMapper.readValue(snapshot.getStateJson(), type);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to deserialize snapshot for aggregate=" + snapshot.getAggregateId(), e);
+            throw new IllegalStateException("Failed to deserialize snapshot for aggregate=" + snapshot.getAggregateId(), e);
         }
     }
 

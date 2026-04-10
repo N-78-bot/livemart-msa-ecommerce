@@ -281,7 +281,7 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
             );
         } catch (Exception e) {
             log.error("Lua 스크립트 로딩 실패: {}", e.getMessage());
-            throw new RuntimeException("Rate Limit Lua 스크립트 초기화 실패", e);
+            throw new IllegalStateException("Rate Limit Lua 스크립트 초기화 실패", e);
         }
     }
 }
