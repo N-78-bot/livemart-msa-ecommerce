@@ -343,19 +343,6 @@ k6 run tests/load/k6-order-flow.js
 
 ---
 
-## 스크린샷
-
-<details>
-<summary>▶ 화면 보기</summary>
-
-| 홈페이지 | 상품 목록 |
-|--------|---------|
-| ![홈](01_homepage.png) | ![상품](02_products_page.png) |
-
-</details>
-
----
-
 ## 개발 환경
 
 - **OS**: Windows 11 · **IDE**: IntelliJ IDEA · **JDK**: OpenJDK 21 · **Build**: Gradle 8.10
