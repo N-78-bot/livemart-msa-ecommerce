@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 
 /**
  * CQRS Query Side - 읽기 전용 서비스
@@ -82,12 +81,8 @@ public class OrderQueryService {
         long cancelledOrders = orderRepository.countByStatus(OrderStatus.CANCELLED);
         long totalOrders     = pendingOrders + confirmedOrders + shippedOrders + deliveredOrders + cancelledOrders;
 
-        // 매출 집계는 비취소 주문 대상 SUM 쿼리가 이상적이나, 현재 캐시(5분)로 빈도 제어
-        List<Order> allOrders = orderRepository.findAll();
-        BigDecimal totalRevenue = allOrders.stream()
-                .filter(o -> o.getStatus() != OrderStatus.CANCELLED)
-                .map(Order::getTotalAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // DB SUM 집계 쿼리로 엔티티 로딩 없이 매출 합산 (OOM 방지)
+        BigDecimal totalRevenue = orderRepository.sumTotalAmountExcludingStatus(OrderStatus.CANCELLED);
 
         long nonCancelledCount = totalOrders - cancelledOrders;
         BigDecimal averageAmount = nonCancelledCount > 0
