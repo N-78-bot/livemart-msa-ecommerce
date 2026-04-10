@@ -6,8 +6,7 @@ import com.livemart.user.security.MfaService;
 import com.livemart.user.security.MfaService.MfaSetupInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,17 +27,17 @@ public class MfaController {
      * QR 코드 및 백업 코드 생성
      */
     @PostMapping("/setup")
-    public ResponseEntity<MfaSetupInfo> setupMfa(@AuthenticationPrincipal UserDetails userDetails) {
-        String username = userDetails.getUsername();
+    public ResponseEntity<MfaSetupInfo> setupMfa(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
 
-        User user = userRepository.findByEmail(username)
+        User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (user.isMfaEnabled()) {
             return ResponseEntity.badRequest().build();
         }
 
-        MfaSetupInfo setupInfo = mfaService.setupMfa(username);
+        MfaSetupInfo setupInfo = mfaService.setupMfa(user.getEmail());
 
         return ResponseEntity.ok(setupInfo);
     }
@@ -48,12 +47,12 @@ public class MfaController {
      */
     @PostMapping("/enable")
     public ResponseEntity<MfaEnableResponse> enableMfa(
-            @AuthenticationPrincipal UserDetails userDetails,
+            Authentication authentication,
             @RequestBody MfaEnableRequest request) {
 
-        String username = userDetails.getUsername();
+        Long userId = (Long) authentication.getPrincipal();
 
-        User user = userRepository.findByEmail(username)
+        User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         // 코드 검증
@@ -76,12 +75,12 @@ public class MfaController {
      */
     @PostMapping("/disable")
     public ResponseEntity<MfaDisableResponse> disableMfa(
-            @AuthenticationPrincipal UserDetails userDetails,
+            Authentication authentication,
             @RequestBody MfaDisableRequest request) {
 
-        String username = userDetails.getUsername();
+        Long userId = (Long) authentication.getPrincipal();
 
-        User user = userRepository.findByEmail(username)
+        User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (!user.isMfaEnabled()) {
@@ -145,10 +144,10 @@ public class MfaController {
      * MFA 상태 조회
      */
     @GetMapping("/status")
-    public ResponseEntity<MfaStatusResponse> getMfaStatus(@AuthenticationPrincipal UserDetails userDetails) {
-        String username = userDetails.getUsername();
+    public ResponseEntity<MfaStatusResponse> getMfaStatus(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
 
-        User user = userRepository.findByEmail(username)
+        User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         int remainingBackupCodes = user.getBackupCodesSet().size();
@@ -164,12 +163,12 @@ public class MfaController {
      */
     @PostMapping("/backup-codes/regenerate")
     public ResponseEntity<BackupCodesResponse> regenerateBackupCodes(
-            @AuthenticationPrincipal UserDetails userDetails,
+            Authentication authentication,
             @RequestBody RegenerateBackupCodesRequest request) {
 
-        String username = userDetails.getUsername();
+        Long userId = (Long) authentication.getPrincipal();
 
-        User user = userRepository.findByEmail(username)
+        User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (!user.isMfaEnabled()) {

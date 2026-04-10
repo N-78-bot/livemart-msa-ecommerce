@@ -63,7 +63,7 @@ export function AuthForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: form.email }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || '전송 실패');
       toast.success(data._demo ? `데모 인증 코드: 123456` : `${form.email}로 인증 코드를 발송했습니다`, { duration: 6000 });
       setCodeSent(true);
