@@ -1,5 +1,6 @@
 package com.livemart.order.aspect;
 
+import com.livemart.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -41,16 +42,18 @@ public class DistributedLockAspect {
             );
 
             if (!available) {
-                log.error("Lock acquisition failed: {}", key);
-                throw new RuntimeException("현재 처리 중인 요청이 있습니다. 잠시 후 다시 시도해주세요.");
+                log.warn("Lock acquisition failed (concurrent request): {}", key);
+                // 429 Too Many Requests 시맨틱: 동일 자원에 대한 동시 요청 거부
+                throw new BusinessException("LOCK_CONFLICT",
+                        "현재 처리 중인 요청이 있습니다. 잠시 후 다시 시도해주세요.", 429);
             }
 
-            log.info("Lock acquired: {}", key);
+            log.debug("Lock acquired: {}", key);
             return joinPoint.proceed();
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("락 획득 중 인터럽트 발생", e);
+            throw new BusinessException("LOCK_INTERRUPTED", "락 획득 중 인터럽트 발생", 503);
         } finally {
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
