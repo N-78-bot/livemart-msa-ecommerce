@@ -1,9 +1,47 @@
 /**
- * 데모 모드 캐치올 API 핸들러
- * Vercel 배포 환경에서 백엔드 없이 모든 /api/* 요청에 mock 데이터 반환
- * Next.js 특정 route (admin/metrics, demo/products)는 해당 파일이 우선 처리
+ * API 캐치올 핸들러
+ * 1순위: 실제 백엔드(GCP)로 프록시
+ * 2순위: 백엔드 미연결 시 데모 데이터 반환 (fallback)
  */
 import { NextRequest, NextResponse } from 'next/server';
+
+// ─────────────────────────────────────────────────────────────────
+// 백엔드 프록시
+// ─────────────────────────────────────────────────────────────────
+const GCP_API = 'http://34.64.189.54:8888';
+const BACKEND = (() => {
+  const url = (process.env.API_GATEWAY_URL || process.env.NEXT_PUBLIC_API_URL || GCP_API).replace(/\/$/, '');
+  // localhost/내부 호스트는 Vercel에서 접근 불가 → 데모 모드
+  return /localhost|127\.0\.0\.1|\.internal/.test(url) ? null : url;
+})();
+
+async function proxyRequest(request: NextRequest, method: string, seg: string[]): Promise<NextResponse | null> {
+  if (!BACKEND) return null;
+  try {
+    const search = request.nextUrl.search;
+    const url = `${BACKEND}/api/${seg.join('/')}${search}`;
+    const headers: Record<string, string> = {};
+    const cookie = request.headers.get('cookie');
+    if (cookie) headers['cookie'] = cookie;
+    const contentType = request.headers.get('content-type');
+    if (contentType) headers['content-type'] = contentType;
+    const authorization = request.headers.get('authorization');
+    if (authorization) headers['authorization'] = authorization;
+    let body: ArrayBuffer | undefined;
+    if (!['GET', 'HEAD'].includes(method)) body = await request.arrayBuffer();
+    const res = await fetch(url, { method, headers, body, signal: AbortSignal.timeout(8000) });
+    const resBody = await res.arrayBuffer();
+    const response = new NextResponse(resBody, { status: res.status });
+    res.headers.forEach((v, k) => {
+      if (!['transfer-encoding', 'connection', 'content-encoding'].includes(k.toLowerCase())) {
+        response.headers.set(k, v);
+      }
+    });
+    return response;
+  } catch {
+    return null; // 백엔드 미연결 → 데모 fallback
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────
 // 데모 데이터
@@ -140,6 +178,8 @@ export async function GET(
 ) {
   const { path } = await params;
   const seg = path; // e.g. ['products', '1', 'reviews']
+  const proxied = await proxyRequest(request, 'GET', seg);
+  if (proxied) return proxied;
   const sp = request.nextUrl.searchParams;
 
   // ── health endpoints ──────────────────────────────────────────
@@ -514,6 +554,8 @@ export async function POST(
 ) {
   const { path } = await params;
   const seg = path;
+  const proxied = await proxyRequest(request, 'POST', seg);
+  if (proxied) return proxied;
 
   // ── users/login ───────────────────────────────────────────────
   if (seg[0] === 'users' && seg[1] === 'login') {
@@ -722,11 +764,13 @@ export async function PUT(
 // ─────────────────────────────────────────────────────────────────
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
   const seg = path;
+  const proxied = await proxyRequest(request, 'DELETE', seg);
+  if (proxied) return proxied;
 
   // /api/users/{id}/cart (clear)
   if (seg[0] === 'users' && seg[2] === 'cart' && !seg[3]) {
@@ -756,11 +800,13 @@ export async function DELETE(
 // ─────────────────────────────────────────────────────────────────
 
 export async function PATCH(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
   const seg = path;
+  const proxied = await proxyRequest(request, 'PATCH', seg);
+  if (proxied) return proxied;
 
   // /api/users/me (프로필 수정)
   if (seg[0] === 'users' && seg[1] === 'me') {
