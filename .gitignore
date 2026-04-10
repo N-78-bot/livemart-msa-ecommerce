@@ -51,6 +51,18 @@ application-local.yml
 .ai/
 .claude/
 *.tmp
+.playwright-mcp/
+
+# 개발 중 생성된 스크린샷/임시 파일
+*.png
+*.jpeg
+*.jpg
+!docs/**/*.png
+!docs/**/*.jpg
+!frontend/public/**
+*.txt
+TASK.md
+fix_commit_msg.py
 
 # Personal dev scripts (OAuth setup, etc.)
 scripts/

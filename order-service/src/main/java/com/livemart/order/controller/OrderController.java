@@ -4,7 +4,9 @@ import com.livemart.order.domain.OrderStatus;
 import com.livemart.order.dto.OrderCreateRequest;
 import com.livemart.order.dto.OrderResponse;
 import com.livemart.order.service.OrderService;
+import com.livemart.common.idempotency.IdempotencyKey;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,9 +42,16 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrdersByUserId(userId, pageable));
     }
 
-    @Operation(summary = "주문 생성", description = "새로운 주문을 생성합니다 (Saga Pattern)")
+    @Operation(
+        summary = "주문 생성",
+        description = "새로운 주문을 생성합니다 (Saga Pattern). Idempotency-Key 헤더로 중복 요청을 방지할 수 있습니다."
+    )
+    @IdempotencyKey(prefix = "order-create", ttlSeconds = 86400)
     @PostMapping
-    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderCreateRequest request) {
+    public ResponseEntity<OrderResponse> createOrder(
+            @Parameter(description = "멱등성 키 (UUID 권장, 24시간 유효)", example = "550e8400-e29b-41d4-a716-446655440000")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKeyHeader,
+            @Valid @RequestBody OrderCreateRequest request) {
         OrderResponse response = orderService.createOrder(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
