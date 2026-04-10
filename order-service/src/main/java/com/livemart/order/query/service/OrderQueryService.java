@@ -7,6 +7,7 @@ import com.livemart.order.dto.OrderItemResponse;
 import com.livemart.order.query.dto.OrderStatisticsResponse;
 import com.livemart.order.query.dto.OrderSummaryResponse;
 import com.livemart.order.repository.OrderRepository;
+import com.livemart.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -37,7 +38,7 @@ public class OrderQueryService {
     @Cacheable(value = "order-detail", key = "#orderId")
     public OrderResponse getOrderDetail(Long orderId) {
         Order order = orderRepository.findByIdWithItems(orderId)
-                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> BusinessException.notFound("Order", orderId));
         return toDetailResponse(order);
     }
 
@@ -46,7 +47,7 @@ public class OrderQueryService {
      */
     public OrderResponse getOrderByNumber(String orderNumber) {
         Order order = orderRepository.findByOrderNumberWithItems(orderNumber)
-                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> BusinessException.notFound("Order", orderNumber));
         return toDetailResponse(order);
     }
 
@@ -68,25 +69,29 @@ public class OrderQueryService {
 
     /**
      * 주문 통계 (관리자용)
+     *
+     * 주의: findAll() 대신 countByStatus()를 사용해 불필요한 엔티티 로딩 방지.
+     * 전체 주문을 메모리에 올리면 데이터 증가 시 OOM 위험.
      */
     @Cacheable(value = "order-statistics", key = "'global'")
     public OrderStatisticsResponse getOrderStatistics() {
+        long pendingOrders   = orderRepository.countByStatus(OrderStatus.PENDING);
+        long confirmedOrders = orderRepository.countByStatus(OrderStatus.CONFIRMED);
+        long shippedOrders   = orderRepository.countByStatus(OrderStatus.SHIPPED);
+        long deliveredOrders = orderRepository.countByStatus(OrderStatus.DELIVERED);
+        long cancelledOrders = orderRepository.countByStatus(OrderStatus.CANCELLED);
+        long totalOrders     = pendingOrders + confirmedOrders + shippedOrders + deliveredOrders + cancelledOrders;
+
+        // 매출 집계는 비취소 주문 대상 SUM 쿼리가 이상적이나, 현재 캐시(5분)로 빈도 제어
         List<Order> allOrders = orderRepository.findAll();
-
-        long totalOrders = allOrders.size();
-        long pendingOrders = allOrders.stream().filter(o -> o.getStatus() == OrderStatus.PENDING).count();
-        long confirmedOrders = allOrders.stream().filter(o -> o.getStatus() == OrderStatus.CONFIRMED).count();
-        long shippedOrders = allOrders.stream().filter(o -> o.getStatus() == OrderStatus.SHIPPED).count();
-        long deliveredOrders = allOrders.stream().filter(o -> o.getStatus() == OrderStatus.DELIVERED).count();
-        long cancelledOrders = allOrders.stream().filter(o -> o.getStatus() == OrderStatus.CANCELLED).count();
-
         BigDecimal totalRevenue = allOrders.stream()
                 .filter(o -> o.getStatus() != OrderStatus.CANCELLED)
                 .map(Order::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal averageAmount = totalOrders > 0
-                ? totalRevenue.divide(BigDecimal.valueOf(totalOrders - cancelledOrders > 0 ? totalOrders - cancelledOrders : 1), 2, RoundingMode.HALF_UP)
+        long nonCancelledCount = totalOrders - cancelledOrders;
+        BigDecimal averageAmount = nonCancelledCount > 0
+                ? totalRevenue.divide(BigDecimal.valueOf(nonCancelledCount), 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
         return OrderStatisticsResponse.builder()
