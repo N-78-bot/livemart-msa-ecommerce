@@ -26,7 +26,13 @@ async function proxyRequest(request: NextRequest, method: string, seg: string[])
     const contentType = request.headers.get('content-type');
     if (contentType) headers['content-type'] = contentType;
     const authorization = request.headers.get('authorization');
-    if (authorization) headers['authorization'] = authorization;
+    if (authorization) {
+      headers['authorization'] = authorization;
+    } else if (cookie) {
+      // JWT를 Authorization Bearer로도 전달 (쿠키 파싱 실패 대비 fallback)
+      const match = cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
+      if (match) headers['authorization'] = `Bearer ${match[1]}`;
+    }
     let body: ArrayBuffer | undefined;
     if (!['GET', 'HEAD'].includes(method)) body = await request.arrayBuffer();
     const res = await fetch(url, { method, headers, body, signal: AbortSignal.timeout(8000) });
