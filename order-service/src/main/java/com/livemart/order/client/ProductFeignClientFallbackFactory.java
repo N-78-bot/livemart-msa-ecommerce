@@ -33,7 +33,7 @@ public class ProductFeignClientFallbackFactory implements FallbackFactory<Produc
                     }
                 }
                 log.error("Product Service 호출 실패 (updateStock): productId={}", productId, cause);
-                throw new RuntimeException("재고 업데이트가 실패했습니다.");
+                throw new BusinessException("SERVICE_UNAVAILABLE", "재고 업데이트가 실패했습니다.", 503);
             }
         };
     }
@@ -47,6 +47,6 @@ public class ProductFeignClientFallbackFactory implements FallbackFactory<Produc
             }
         }
         log.error("Product Service 호출 실패 ({}): productId={}", method, productId, cause);
-        throw new RuntimeException("상품 서비스가 일시적으로 이용 불가합니다.");
+        throw new BusinessException("SERVICE_UNAVAILABLE", "상품 서비스가 일시적으로 이용 불가합니다.", 503);
     }
 }
