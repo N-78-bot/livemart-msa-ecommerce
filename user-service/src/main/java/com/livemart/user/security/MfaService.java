@@ -83,7 +83,7 @@ public class MfaService {
 
         } catch (Exception e) {
             log.error("Failed to generate QR code", e);
-            throw new RuntimeException("QR code generation failed", e);
+            throw new IllegalStateException("QR code generation failed", e);
         }
     }
 
@@ -119,7 +119,7 @@ public class MfaService {
             return code;
         } catch (Exception e) {
             log.error("Failed to generate code", e);
-            throw new RuntimeException("Code generation failed", e);
+            throw new IllegalStateException("Code generation failed", e);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.livemart.user.service;
 
+import com.livemart.common.exception.BusinessException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,7 @@ public class EmailVerificationService {
         } catch (Exception e) {
             redisTemplate.delete(key);
             log.error("Failed to send verification email: email={}, error={}", email, e.getMessage());
-            throw new RuntimeException("이메일 전송에 실패했습니다: " + e.getMessage());
+            throw new BusinessException("EMAIL_SEND_FAILED", "이메일 전송에 실패했습니다: " + e.getMessage(), 503);
         }
     }
 

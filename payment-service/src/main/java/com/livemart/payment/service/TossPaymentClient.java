@@ -1,5 +1,6 @@
 package com.livemart.payment.service;
 
+import com.livemart.common.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -53,7 +54,7 @@ public class TossPaymentClient {
             return response.getBody();
         } catch (HttpClientErrorException e) {
             log.error("Toss 결제 승인 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("Toss 결제 승인 실패: " + e.getResponseBodyAsString());
+            throw BusinessException.paymentFailed("Toss 결제 승인 실패: " + e.getResponseBodyAsString());
         }
     }
 
@@ -84,7 +85,7 @@ public class TossPaymentClient {
             return response.getBody();
         } catch (HttpClientErrorException e) {
             log.error("Toss 결제 취소 실패: {}", e.getResponseBodyAsString());
-            throw new RuntimeException("Toss 결제 취소 실패: " + e.getResponseBodyAsString());
+            throw BusinessException.paymentFailed("Toss 결제 취소 실패: " + e.getResponseBodyAsString());
         }
     }
 }

@@ -79,7 +79,7 @@ public class ImageOptimizationService {
 
             } catch (IOException e) {
                 log.error("Failed to optimize image", e);
-                throw new RuntimeException("Image optimization failed", e);
+                throw new IllegalStateException("Image optimization failed", e);
             }
         });
     }
