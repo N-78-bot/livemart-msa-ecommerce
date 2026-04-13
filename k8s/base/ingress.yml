@@ -21,7 +21,7 @@ spec:
               service:
                 name: api-gateway
                 port:
-                  number: 8080
+                  number: 8888
     - host: www.livemart.com
       http:
         paths:

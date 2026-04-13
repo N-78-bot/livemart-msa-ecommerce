@@ -83,7 +83,7 @@ const CATEGORIES = [
 async function fetchProducts(): Promise<Product[]> {
   // 서버 컴포넌트는 상대경로 불가 → API_GATEWAY_URL(서버 전용) 또는 NEXT_PUBLIC_API_URL 사용
   // 주의: VERCEL_URL은 Vercel 자체 도메인이므로 API URL로 사용하면 안 됨
-  const GCP_API = 'http://34.64.189.54:8888';
+  const GCP_API = process.env.GCP_API_URL || '';
   let apiBase = process.env.API_GATEWAY_URL || process.env.NEXT_PUBLIC_API_URL || GCP_API;
   if (/localhost|127\.0\.0\.1|\.internal/.test(apiBase)) apiBase = GCP_API;
   try {
