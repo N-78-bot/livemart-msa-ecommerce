@@ -255,6 +255,10 @@ resilience4j:
       default:
         baseConfig: default
 
+# JWT 서명 검증 (user-service와 동일한 시크릿 사용)
+jwt:
+  secret: ${JWT_SECRET}
+
 logging:
   level:
     org.springframework.cloud.gateway: INFO

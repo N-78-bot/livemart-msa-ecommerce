@@ -70,7 +70,10 @@ public class SecurityConfig {
         }
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of(
+            "Authorization", "Content-Type", "X-Requested-With", "Cookie",
+            "X-API-Key", "X-User-Id", "X-User-Role", "X-User-Email"
+        ));
         config.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

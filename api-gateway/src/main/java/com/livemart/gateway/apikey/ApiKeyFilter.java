@@ -1,9 +1,11 @@
 package com.livemart.gateway.apikey;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -14,7 +16,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Base64;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -27,12 +30,17 @@ import java.util.List;
  * 4. 아무것도 없음 → 401 반환
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class ApiKeyFilter implements GlobalFilter, Ordered {
 
     private final ApiKeyService apiKeyService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final SecretKey jwtSecretKey;
+
+    public ApiKeyFilter(ApiKeyService apiKeyService,
+                        @Value("${jwt.secret}") String jwtSecret) {
+        this.apiKeyService = apiKeyService;
+        this.jwtSecretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+    }
 
     private static final String API_KEY_HEADER = "X-API-Key";
 
@@ -74,10 +82,14 @@ public class ApiKeyFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // 2. JWT 쿠키 또는 Authorization Bearer → 사용자 컨텍스트 헤더 주입 후 통과
+        // 2. JWT 쿠키 또는 Authorization Bearer → 서명 검증 후 사용자 컨텍스트 헤더 주입
         if (hasJwtAuth(request)) {
-            log.debug("JWT auth detected, skipping API key check: path={}", path);
+            log.debug("JWT auth detected: path={}", path);
             ServerHttpRequest mutated = injectUserContextHeaders(request);
+            if (mutated == null) {
+                // JWT 서명 검증 실패
+                return unauthorized(exchange, "Invalid or expired JWT token");
+            }
             return chain.filter(exchange.mutate().request(mutated).build());
         }
 
@@ -115,31 +127,32 @@ public class ApiKeyFilter implements GlobalFilter, Ordered {
     }
 
     /**
-     * JWT 쿠키 또는 Authorization 헤더에서 사용자 정보를 파싱하여
-     * X-User-Id, X-User-Role, X-User-Email 헤더를 추가한 요청 반환.
-     * 서명 검증 없이 페이로드만 디코딩 (API Gateway가 이미 신뢰 경계)
+     * JWT 서명 검증 후 사용자 컨텍스트 헤더(X-User-Id, X-User-Role, X-User-Email) 주입.
+     * 서명 검증 실패 시 요청 거부 (401).
      */
     private ServerHttpRequest injectUserContextHeaders(ServerHttpRequest request) {
         String token = extractJwtToken(request);
         if (token == null) return request;
         try {
-            String[] parts = token.split("\\.");
-            if (parts.length != 3) return request;
-            String payloadB64 = parts[1];
-            // Base64URL padding 보정
-            int mod = payloadB64.length() % 4;
-            if (mod == 2) payloadB64 += "==";
-            else if (mod == 3) payloadB64 += "=";
-            byte[] decoded = Base64.getUrlDecoder().decode(payloadB64);
-            JsonNode payload = objectMapper.readTree(decoded);
+            Claims claims = Jwts.parser()
+                    .verifyWith(jwtSecretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
             ServerHttpRequest.Builder builder = request.mutate();
-            if (payload.has("sub"))   builder.header("X-User-Id",    payload.get("sub").asText());
-            if (payload.has("role"))  builder.header("X-User-Role",  payload.get("role").asText());
-            if (payload.has("email")) builder.header("X-User-Email", payload.get("email").asText());
+            if (claims.getSubject() != null) builder.header("X-User-Id", claims.getSubject());
+            String role = claims.get("role", String.class);
+            if (role != null) builder.header("X-User-Role", role);
+            String email = claims.get("email", String.class);
+            if (email != null) builder.header("X-User-Email", email);
             return builder.build();
+        } catch (JwtException e) {
+            log.warn("JWT 서명 검증 실패: {}", e.getMessage());
+            return null; // 검증 실패 시 null 반환 → 호출자가 401 처리
         } catch (Exception e) {
-            log.debug("Failed to parse JWT payload for header injection: {}", e.getMessage());
-            return request;
+            log.debug("JWT 파싱 실패: {}", e.getMessage());
+            return null;
         }
     }
 
