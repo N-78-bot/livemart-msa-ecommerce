@@ -8,7 +8,7 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'com.google.firebase:firebase-admin:9.8.0'
-    implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:3.0.2'
+    implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:3.0.3'
     testImplementation 'org.testcontainers:kafka'
     testImplementation 'io.projectreactor:reactor-test'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
