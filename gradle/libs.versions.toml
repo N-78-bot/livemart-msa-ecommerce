@@ -1,6 +1,6 @@
 [versions]
 # ── Core Framework ────────────────────────────────────────────
-spring-boot            = "3.4.1"
+spring-boot            = "4.0.5"
 spring-dependency-mgmt = "1.1.7"
 spring-cloud           = "2024.0.0"
 graalvm-native         = "0.10.4"
