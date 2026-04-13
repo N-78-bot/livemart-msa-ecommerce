@@ -64,8 +64,12 @@ application-local.yml
 TASK.md
 fix_commit_msg.py
 
-# Personal dev scripts (OAuth setup, etc.)
-scripts/
+# Personal dev scripts (OAuth setup images and temp scripts)
+scripts/*.js
+scripts/*.png
+scripts/*.jpeg
+scripts/*.jpg
+scripts/*.sql
 
 # Lock files (managed by CI)
 package-lock.json
