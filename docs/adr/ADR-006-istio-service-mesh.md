@@ -1,8 +1,12 @@
 # ADR-006: 서비스 메쉬로 Istio 채택 (East-West mTLS + Traffic Management)
 
-- **상태**: 채택됨 (Accepted)
+- **상태**: 검토 중 (Proposed) — GCP Docker Compose 환경에서는 Resilience4j로 Circuit Breaker 대체 구현
 - **날짜**: 2026-03-17
 - **결정자**: 인프라 팀
+
+> **현재 상태 참고:** 포트폴리오 환경(GCP VM + Docker Compose)에서는 Istio 대신
+> Resilience4j Circuit Breaker + Spring Cloud Gateway Rate Limiting으로 동일 목표를 달성.
+> Kubernetes 클러스터 전환 시 Istio sidecar injection 적용 예정.
 
 ## 배경 (Context)
 

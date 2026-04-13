@@ -1,6 +1,7 @@
 # LiveMart — MSA 이커머스 플랫폼
 
 [![CI](https://github.com/parkmin-je/livemart-msa-ecommerce/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/parkmin-je/livemart-msa-ecommerce/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/parkmin-je/livemart-msa-ecommerce/branch/main/graph/badge.svg)](https://codecov.io/gh/parkmin-je/livemart-msa-ecommerce)
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.6-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
