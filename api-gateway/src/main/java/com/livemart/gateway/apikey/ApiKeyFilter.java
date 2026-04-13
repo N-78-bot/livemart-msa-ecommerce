@@ -76,9 +76,16 @@ public class ApiKeyFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
 
-        // 1. 공개 경로 → 바로 통과
+        // 1. 공개 경로 → X-User-* 헤더 제거 후 통과 (헤더 위조 방지)
         if (isPublicPath(path)) {
-            return chain.filter(exchange);
+            ServerHttpRequest stripped = request.mutate()
+                    .headers(h -> {
+                        h.remove("X-User-Id");
+                        h.remove("X-User-Role");
+                        h.remove("X-User-Email");
+                    })
+                    .build();
+            return chain.filter(exchange.mutate().request(stripped).build());
         }
 
         // 2. JWT 쿠키 또는 Authorization Bearer → 서명 검증 후 사용자 컨텍스트 헤더 주입
@@ -109,8 +116,13 @@ public class ApiKeyFilter implements GlobalFilter, Ordered {
             return unauthorized(exchange, result.message());
         }
 
-        // API Key 검증 성공 → 사용자 정보를 헤더에 추가
+        // API Key 검증 성공 → 위조 헤더 제거 후 검증된 사용자 정보 주입
         ServerHttpRequest mutatedRequest = request.mutate()
+            .headers(h -> {
+                h.remove("X-User-Id");
+                h.remove("X-User-Role");
+                h.remove("X-User-Email");
+            })
             .header("X-User-Id", String.valueOf(result.keyInfo().userId()))
             .header("X-API-Key-Name", result.keyInfo().name())
             .build();
@@ -127,6 +139,7 @@ public class ApiKeyFilter implements GlobalFilter, Ordered {
 
     /**
      * JWT 서명 검증 후 사용자 컨텍스트 헤더(X-User-Id, X-User-Role, X-User-Email) 주입.
+     * 클라이언트가 전송한 X-User-* 헤더를 먼저 제거해 헤더 위조(Spoofing) 방지.
      * 서명 검증 실패 시 요청 거부 (401).
      */
     private ServerHttpRequest injectUserContextHeaders(ServerHttpRequest request) {
@@ -139,7 +152,13 @@ public class ApiKeyFilter implements GlobalFilter, Ordered {
                     .parseSignedClaims(token)
                     .getPayload();
 
-            ServerHttpRequest.Builder builder = request.mutate();
+            // 클라이언트 위조 헤더 제거 후 검증된 값으로 교체
+            ServerHttpRequest.Builder builder = request.mutate()
+                    .headers(h -> {
+                        h.remove("X-User-Id");
+                        h.remove("X-User-Role");
+                        h.remove("X-User-Email");
+                    });
             if (claims.getSubject() != null) builder.header("X-User-Id", claims.getSubject());
             String role = claims.get("role", String.class);
             if (role != null) builder.header("X-User-Role", role);
