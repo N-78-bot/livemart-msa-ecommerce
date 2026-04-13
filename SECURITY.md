@@ -82,6 +82,7 @@
 
 - **Rate Limiting**: Redis Token Bucket (100 RPS 기본 / 주문·결제 20 RPS)
 - **API Key 인증**: 외부 연동 서비스용
+- **X-User-* 헤더 위조 방지**: API Gateway에서 클라이언트 요청의 X-User-Id/Role 헤더 제거 후 JWT 검증 완료된 값으로 교체
 - **Circuit Breaker**: Resilience4j (Istio DestinationRule 이중 보호)
 - **Input Validation**: Bean Validation (`@Valid`) + Hibernate Validator
 
@@ -114,7 +115,7 @@
 | A04 | Insecure Design | Transactional Outbox (이중 송금 방지), 결제 서비스 격리, ADR 기반 보안 결정 기록 | ✅ |
 | A05 | Security Misconfiguration | Trivy 컨테이너 스캔 (CI), Gitleaks (하드코딩 시크릿 탐지), Helm secret 템플릿, 비-root Docker 실행 | ✅ |
 | A06 | Vulnerable Components | Dependabot (주간 자동 PR), `npm audit` (CI), Trivy SCA, CodeQL 분석 | ✅ |
-| A07 | Identification & Authentication Failures | OAuth2 PKCE / client_secret_post, JWT Blacklist (Redis), Access Token 15분 TTL, Refresh Token Rotation | ✅ |
+| A07 | Identification & Authentication Failures | OAuth2 PKCE / client_secret_post, JWT Blacklist (Redis), Access Token 1시간 TTL, Refresh Token Rotation | ✅ |
 | A08 | Software & Data Integrity Failures | Docker 이미지 서명 (GHCR), Helm provenance, Kubernetes NetworkPolicy (East-West 차단) | ✅ |
 | A09 | Security Logging & Monitoring Failures | ELK Stack 중앙 로그, Zipkin 분산 추적, Grafana 알람, Slack 실시간 알림 | ✅ |
 | A10 | Server-Side Request Forgery (SSRF) | SSRF 대상 URL 화이트리스트 (Feign Client), Istio Egress Gateway (외부 호출 제한), SecurityContext URL 검증 | ✅ |
