@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.cloud.contract' version '4.1.4'
+    id 'org.springframework.cloud.contract' version '4.3.3'
 }
 
 dependencies {
@@ -23,7 +23,7 @@ dependencies {
     testImplementation 'org.testcontainers:kafka'
 
     // Spring Cloud Contract — Producer (계약 검증 테스트 자동 생성)
-    testImplementation "org.springframework.cloud:spring-cloud-starter-contract-verifier:4.1.4"
+    testImplementation "org.springframework.cloud:spring-cloud-starter-contract-verifier:4.3.3"
 }
 
 contracts {
