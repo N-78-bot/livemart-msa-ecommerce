@@ -9,8 +9,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @Tag(name = "Review API", description = "상품 리뷰 관리 API")
 @RestController
@@ -46,8 +48,9 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> updateReview(
             @PathVariable Long productId,
             @PathVariable Long reviewId,
-            @RequestParam Long userId,
+            @RequestHeader(value = "X-User-Id", required = false) String xUserId,
             @Valid @RequestBody ReviewRequest request) {
+        Long userId = parseUserId(xUserId);
         return ResponseEntity.ok(reviewService.updateReview(reviewId, userId, request));
     }
 
@@ -56,7 +59,8 @@ public class ReviewController {
     public ResponseEntity<Void> deleteReview(
             @PathVariable Long productId,
             @PathVariable Long reviewId,
-            @RequestParam Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) String xUserId) {
+        Long userId = parseUserId(xUserId);
         reviewService.deleteReview(reviewId, userId);
         return ResponseEntity.ok().build();
     }
@@ -77,5 +81,16 @@ public class ReviewController {
             @PathVariable Long userId,
             Pageable pageable) {
         return ResponseEntity.ok(reviewService.getUserReviews(userId, pageable));
+    }
+
+    private Long parseUserId(String xUserId) {
+        if (xUserId == null || xUserId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다");
+        }
+        try {
+            return Long.parseLong(xUserId);
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 사용자 ID 형식입니다");
+        }
     }
 }
