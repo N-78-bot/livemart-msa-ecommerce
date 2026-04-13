@@ -131,6 +131,7 @@ jobs:
           - product-service
           - order-service
           - payment-service
+          - inventory-service
           - api-gateway
           - eureka-server
           - ai-service
@@ -187,7 +188,7 @@ jobs:
         working-directory: ./frontend
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8080
+          NEXT_PUBLIC_API_URL: http://localhost:8888
 
   # ── 코드 품질 분석 (Sonar / CodeCov) ────────────────────────────
   coverage-report:
@@ -306,7 +307,7 @@ jobs:
         working-directory: ./frontend
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8080
+          NEXT_PUBLIC_API_URL: http://localhost:8888
 
       - name: Run Lighthouse CI
         working-directory: ./frontend
