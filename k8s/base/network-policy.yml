@@ -208,7 +208,9 @@ spec:
           port: 50051
 
 ---
-# 10. Prometheus → 모든 서비스 메트릭 스크레이핑 허용 (:8080/actuator/prometheus)
+# 10. Prometheus → 모든 서비스 메트릭 스크레이핑 허용 (/actuator/prometheus)
+# 서비스별 포트: api-gateway(8888), user(8085), product(8082), order(8083),
+#   payment(8084), inventory(8088), notification(8086), analytics(8087), ai(8090)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -227,7 +229,23 @@ spec:
               app: prometheus
       ports:
         - protocol: TCP
-          port: 8080
+          port: 8888
+        - protocol: TCP
+          port: 8085
+        - protocol: TCP
+          port: 8082
+        - protocol: TCP
+          port: 8083
+        - protocol: TCP
+          port: 8084
+        - protocol: TCP
+          port: 8088
+        - protocol: TCP
+          port: 8086
+        - protocol: TCP
+          port: 8087
+        - protocol: TCP
+          port: 8090
 
 ---
 # 11. Eureka → 모든 서비스 등록/디스커버리 허용

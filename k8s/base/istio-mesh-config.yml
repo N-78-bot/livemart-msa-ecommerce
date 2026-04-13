@@ -150,7 +150,7 @@ spec:
         - destination:
             host: api-gateway
             port:
-              number: 8080
+              number: 8888
 ---
 # 7. VirtualService — order-service 카나리 배포 (트래픽 가중치 분할)
 # 사용법:

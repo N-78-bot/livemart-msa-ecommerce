@@ -22,7 +22,7 @@ services:
   gateway:
     name: api-gateway
     replicas: 2
-    port: 8080
+    port: 8888
     image: api-gateway
     tag: latest
     resources:
