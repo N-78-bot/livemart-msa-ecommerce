@@ -88,8 +88,7 @@ public class ReactiveProductQueryService {
      */
     public Flux<ProductResponse> getLowStockProducts(Integer threshold) {
         return Flux.defer(() ->
-            Flux.fromIterable(productRepository.findAll())
-                .filter(p -> p.getStockQuantity() < threshold)
+            Flux.fromIterable(productRepository.findByStockQuantityLessThanEqual(threshold))
         )
         .map(ProductResponse::from)
         .subscribeOn(Schedulers.boundedElastic())

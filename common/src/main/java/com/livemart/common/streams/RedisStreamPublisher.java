@@ -36,7 +36,7 @@ public class RedisStreamPublisher {
             return recordId;
         } catch (Exception e) {
             log.error("Failed to publish to Redis Stream: stream={}, eventType={}", streamKey, eventType, e);
-            throw new RuntimeException("Redis Stream publish failed", e);
+            throw new IllegalStateException("Redis Stream publish failed", e);
         }
     }
 
