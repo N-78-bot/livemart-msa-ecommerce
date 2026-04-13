@@ -67,9 +67,8 @@ public class ApiKeyFilter implements GlobalFilter, Ordered {
         "/api/v1/payments/webhook",
         // 헬스체크 & 모니터링
         "/actuator",
-        "/api/v1/health",
-        // API 키 관리 엔드포인트 자체
-        "/api/v1/api-keys"
+        "/api/v1/health"
+        // 주의: /api/v1/api-keys는 공개 경로에서 제거됨 — JWT 인증 필요
     );
 
     @Override

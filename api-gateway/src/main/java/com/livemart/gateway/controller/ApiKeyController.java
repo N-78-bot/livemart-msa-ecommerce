@@ -3,8 +3,10 @@ package com.livemart.gateway.controller;
 import com.livemart.gateway.apikey.ApiKeyService;
 import com.livemart.gateway.apikey.ApiKeyService.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -28,10 +30,16 @@ public class ApiKeyController {
     }
 
     /**
-     * 사용자별 API Key 목록
+     * 사용자별 API Key 목록 (본인 또는 ADMIN만 조회 가능)
      */
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<ApiKeyInfo>> getUserApiKeys(@PathVariable Long userId) {
+    public ResponseEntity<List<ApiKeyInfo>> getUserApiKeys(
+            @PathVariable Long userId,
+            @RequestHeader(value = "X-User-Id", required = false) String xUserId,
+            @RequestHeader(value = "X-User-Role", required = false) String xUserRole) {
+        if (xUserId != null && !"ADMIN".equals(xUserRole) && !xUserId.equals(userId.toString())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다");
+        }
         List<ApiKeyInfo> apiKeys = apiKeyService.getApiKeysByUserId(userId);
         return ResponseEntity.ok(apiKeys);
     }
