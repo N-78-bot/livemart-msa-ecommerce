@@ -27,7 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Service
 @Slf4j
@@ -172,7 +172,7 @@ public class OrderService {
 
     private String generateOrderNumber() {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String random = String.format("%08X", new Random().nextInt());
+        String random = String.format("%08X", new SecureRandom().nextInt());
         return "ORD-" + timestamp + "-" + random;
     }
 

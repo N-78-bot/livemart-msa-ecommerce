@@ -133,7 +133,7 @@ public class UserController {
     @PatchMapping("/me")
     public ResponseEntity<UserResponse> updateMyProfile(
             Authentication authentication,
-            @RequestBody UpdateProfileRequest request) {
+            @Valid @RequestBody UpdateProfileRequest request) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(userService.updateMyProfile(userId, request));
     }

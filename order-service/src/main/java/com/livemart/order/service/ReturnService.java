@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Slf4j
 @Service
@@ -141,7 +141,7 @@ public class ReturnService {
 
     private String generateReturnNumber() {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String random = String.format("%06X", new Random().nextInt(0xFFFFFF));
+        String random = String.format("%06X", new SecureRandom().nextInt(0xFFFFFF));
         return "RTN-" + timestamp + "-" + random;
     }
 }

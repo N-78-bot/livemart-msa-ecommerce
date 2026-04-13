@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.security.SecureRandom;
 import java.util.Optional;
 
 /**
@@ -224,7 +225,7 @@ public class ReplenishmentOrderService {
         return String.format("REP-%d-%d-%d",
             productId,
             System.currentTimeMillis(),
-            (int)(Math.random() * 1000));
+            new SecureRandom().nextInt(1000));
     }
 
     // ── 공개 타입 (하위 호환 유지) ──────────────────────────────────────
