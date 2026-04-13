@@ -47,6 +47,6 @@ service ProductGrpcService {
 ## 구현 위치
 
 - `product-service/src/main/proto/product.proto`
-- `product-service/grpc/ProductGrpcServer.java` (포트 50051)
+- `product-service/grpc/ProductGrpcServer.java` (포트 9095)
 - `order-service/grpc/ProductGrpcClient.java`
 - `order-service/build.gradle`: `grpc-client-spring-boot-starter`
