@@ -67,7 +67,7 @@ jobs:
           fi
 
       - name: Configure kubectl
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBECONFIG }}
@@ -109,7 +109,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure kubectl
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBECONFIG }}
@@ -186,7 +186,7 @@ jobs:
         uses: grafana/setup-k6-action@v1
 
       - name: Configure kubectl & port-forward to Green
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBECONFIG }}
@@ -232,7 +232,7 @@ jobs:
       CURRENT_SLOT: ${{ needs.pre-deploy-checks.outputs.current_slot }}
     steps:
       - name: Configure kubectl
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBECONFIG }}
@@ -278,7 +278,7 @@ jobs:
       CURRENT_SLOT: ${{ needs.pre-deploy-checks.outputs.current_slot }}
     steps:
       - name: Configure kubectl
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBECONFIG }}
@@ -312,7 +312,7 @@ jobs:
       CURRENT_SLOT: ${{ needs.pre-deploy-checks.outputs.current_slot }}
     steps:
       - name: Configure kubectl
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBECONFIG }}
