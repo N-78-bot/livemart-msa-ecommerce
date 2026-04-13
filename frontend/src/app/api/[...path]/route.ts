@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // ─────────────────────────────────────────────────────────────────
 // 백엔드 프록시
 // ─────────────────────────────────────────────────────────────────
-const GCP_API = 'http://34.64.189.54:8888';
+const GCP_API = process.env.GCP_API_URL || '';
 const BACKEND = (() => {
   const url = (process.env.API_GATEWAY_URL || process.env.NEXT_PUBLIC_API_URL || GCP_API).replace(/\/$/, '');
   // localhost/내부 호스트는 Vercel에서 접근 불가 → 데모 모드

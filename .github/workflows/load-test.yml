@@ -25,7 +25,7 @@ on:
       base_url:
         description: '테스트 대상 URL'
         required: false
-        default: 'http://localhost:8080'
+        default: 'http://localhost:8888'
       vus:
         description: '최대 VU 수 (override, 빈칸이면 시나리오 기본값 사용)'
         required: false
@@ -45,7 +45,7 @@ jobs:
       - name: 대상 URL 결정
         id: set-url
         run: |
-          URL="${{ github.event.inputs.base_url || 'http://localhost:8080' }}"
+          URL="${{ github.event.inputs.base_url || 'http://localhost:8888' }}"
           echo "url=${URL}" >> $GITHUB_OUTPUT
           echo "테스트 대상: ${URL}"
 

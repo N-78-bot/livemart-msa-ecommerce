@@ -46,7 +46,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.daumcdn.net https://*.kakaocdn.net",
               "font-src 'self' https://fonts.gstatic.com https://*.daumcdn.net https://*.kakaocdn.net",
               "img-src 'self' data: blob: https://cdn.livemart.com http://localhost:* https:",
-              "connect-src 'self' http://localhost:* ws://localhost:* http://34.64.189.54:8888 https://api.livemart.com https://*.tosspayments.com https://t1.daumcdn.net https://*.kakaocdn.net https://*.daum.net",
+              "connect-src 'self' http://localhost:* ws://localhost:* https://api.livemart.com https://*.tosspayments.com https://t1.daumcdn.net https://*.kakaocdn.net https://*.daum.net",
               "frame-src https://js.tosspayments.com https://pay.toss.im https://postcode.map.daum.net https://*.daumcdn.net https://*.kakaocdn.net",
               "frame-ancestors 'self'",
               "base-uri 'self'",
@@ -68,7 +68,7 @@ const nextConfig = {
 
   // ── API 프록시 리라이트 ───────────────────────────────────
   async rewrites() {
-    const GCP_API = 'http://34.64.189.54:8888';
+    const GCP_API = process.env.GCP_API_URL || '';
 
     let apiBase = process.env.API_GATEWAY_URL || process.env.NEXT_PUBLIC_API_URL || GCP_API;
 

@@ -86,7 +86,7 @@ type(scope): 설명 (50자 이내, 한국어)
 
 ```bash
 feat(order): 쿠폰 적용 API 추가
-fix(payment): Stripe 이중 청구 방지 멱등성 키 수정
+fix(payment): Toss 이중 청구 방지 멱등성 키 수정
 perf(product): Redis 캐시 TTL 계층화로 DB 부하 96% 절감
 security(user): httpOnly 쿠키 적용 및 SameSite=Strict 설정
 ```
