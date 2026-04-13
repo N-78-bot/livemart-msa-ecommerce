@@ -14,6 +14,15 @@ interface OrderItem {
   totalPrice: number;
 }
 
+interface OrderItem {
+  id: number;
+  productId: number;
+  productName: string;
+  productPrice: number;
+  quantity: number;
+  totalPrice: number;
+}
+
 interface OrderDetail {
   id: number;
   orderNumber?: string;
