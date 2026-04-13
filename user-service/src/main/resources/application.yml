@@ -114,8 +114,8 @@ server:
 jwt:
   # 최소 256비트(32바이트) 이상 랜덤값 필수. 생성: openssl rand -base64 64
   secret: ${JWT_SECRET}
-  expiration: 86400000
-  refresh-expiration: 604800000
+  expiration: 3600000        # 1시간 (ms)
+  refresh-expiration: 604800000  # 7일 (ms)
 
 # OAuth2 성공 후 프론트엔드 리다이렉트 URI
 oauth2:
