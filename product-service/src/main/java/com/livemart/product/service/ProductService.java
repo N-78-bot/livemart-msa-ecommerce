@@ -1,5 +1,6 @@
 package com.livemart.product.service;
 
+import com.livemart.common.exception.BusinessException;
 import com.livemart.product.document.ProductDocument;
 import com.livemart.product.domain.Category;
 import com.livemart.product.domain.Product;
@@ -188,7 +189,7 @@ public class ProductService {
     @Transactional
     public void restoreStock(Long productId, int quantity) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다."));
+                .orElseThrow(() -> BusinessException.notFound("Product", productId));
 
         int oldStock = product.getStockQuantity();
         int newStock = oldStock + quantity;

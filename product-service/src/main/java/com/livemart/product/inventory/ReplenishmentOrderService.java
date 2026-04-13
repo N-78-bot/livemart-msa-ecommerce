@@ -1,24 +1,22 @@
 package com.livemart.product.inventory;
 
 import com.livemart.product.domain.Product;
+import com.livemart.product.domain.ReplenishmentOrderEntity;
 import com.livemart.product.repository.ProductRepository;
+import com.livemart.product.repository.ReplenishmentOrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 재고 발주 관리 서비스
- * 발주 생성, 추적, 완료 처리
+ * 발주 생성, 추적, 완료 처리 — JPA 기반 영속 저장소 사용
  */
 @Service
 @RequiredArgsConstructor
@@ -26,10 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ReplenishmentOrderService {
 
     private final ProductRepository productRepository;
-
-    // 임시 저장소 (실제로는 별도 DB 테이블 필요)
-    private final Map<Long, ReplenishmentOrder> orderStore = new ConcurrentHashMap<>();
-    private final AtomicLong orderIdGenerator = new AtomicLong(1);
+    private final ReplenishmentOrderRepository replenishmentOrderRepository;
 
     /**
      * 발주 생성
@@ -41,26 +36,23 @@ public class ReplenishmentOrderService {
 
         LocalDateTime expectedArrival = LocalDateTime.now().plusDays(leadTimeDays);
 
-        ReplenishmentOrder order = new ReplenishmentOrder(
-            orderIdGenerator.getAndIncrement(),
-            productId,
-            product.getName(),
-            quantity,
-            product.getPrice().multiply(java.math.BigDecimal.valueOf(quantity)),
-            OrderStatus.PENDING,
-            LocalDateTime.now(),
-            expectedArrival,
-            leadTimeDays,
-            null,
-            generateTrackingNumber(productId)
-        );
+        ReplenishmentOrderEntity entity = ReplenishmentOrderEntity.builder()
+            .productId(productId)
+            .productName(product.getName())
+            .quantity(quantity)
+            .totalCost(product.getPrice().multiply(BigDecimal.valueOf(quantity)))
+            .status(ReplenishmentOrderEntity.OrderStatus.PENDING)
+            .expectedArrival(expectedArrival)
+            .leadTimeDays(leadTimeDays)
+            .trackingNumber(generateTrackingNumber(productId))
+            .build();
 
-        orderStore.put(order.id(), order);
+        ReplenishmentOrderEntity saved = replenishmentOrderRepository.save(entity);
 
         log.info("Replenishment order created: orderId={}, productId={}, quantity={}, expectedArrival={}",
-                 order.id(), productId, quantity, expectedArrival);
+                 saved.getId(), productId, quantity, expectedArrival);
 
-        return order;
+        return toDto(saved);
     }
 
     /**
@@ -68,35 +60,19 @@ public class ReplenishmentOrderService {
      */
     @Transactional
     public ReplenishmentOrder updateOrderStatus(Long orderId, OrderStatus newStatus) {
-        ReplenishmentOrder order = orderStore.get(orderId);
-        if (order == null) {
-            throw new IllegalArgumentException("Order not found: " + orderId);
-        }
+        ReplenishmentOrderEntity entity = replenishmentOrderRepository.findById(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
 
-        ReplenishmentOrder updated = new ReplenishmentOrder(
-            order.id(),
-            order.productId(),
-            order.productName(),
-            order.quantity(),
-            order.totalCost(),
-            newStatus,
-            order.orderDate(),
-            order.expectedArrival(),
-            order.leadTimeDays(),
-            newStatus == OrderStatus.RECEIVED ? LocalDateTime.now() : order.actualArrival(),
-            order.trackingNumber()
-        );
-
-        orderStore.put(orderId, updated);
+        entity.updateStatus(toEntityStatus(newStatus));
+        ReplenishmentOrderEntity saved = replenishmentOrderRepository.save(entity);
 
         log.info("Order status updated: orderId={}, status={}", orderId, newStatus);
 
-        // 발주 완료 시 재고 증가
         if (newStatus == OrderStatus.RECEIVED) {
-            receiveOrder(updated);
+            receiveOrder(toDto(saved));
         }
 
-        return updated;
+        return toDto(saved);
     }
 
     /**
@@ -122,117 +98,128 @@ public class ReplenishmentOrderService {
      */
     @Transactional
     public ReplenishmentOrder cancelOrder(Long orderId, String reason) {
-        ReplenishmentOrder order = orderStore.get(orderId);
-        if (order == null) {
-            throw new IllegalArgumentException("Order not found: " + orderId);
-        }
+        ReplenishmentOrderEntity entity = replenishmentOrderRepository.findById(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
 
-        if (order.status() == OrderStatus.RECEIVED) {
+        if (entity.getStatus() == ReplenishmentOrderEntity.OrderStatus.RECEIVED) {
             throw new IllegalStateException("Cannot cancel received order");
         }
 
-        ReplenishmentOrder cancelled = new ReplenishmentOrder(
-            order.id(),
-            order.productId(),
-            order.productName(),
-            order.quantity(),
-            order.totalCost(),
-            OrderStatus.CANCELLED,
-            order.orderDate(),
-            order.expectedArrival(),
-            order.leadTimeDays(),
-            order.actualArrival(),
-            order.trackingNumber()
-        );
-
-        orderStore.put(orderId, cancelled);
+        entity.updateStatus(ReplenishmentOrderEntity.OrderStatus.CANCELLED);
+        ReplenishmentOrderEntity saved = replenishmentOrderRepository.save(entity);
 
         log.info("Order cancelled: orderId={}, reason={}", orderId, reason);
 
-        return cancelled;
+        return toDto(saved);
     }
 
     /**
      * 발주 조회
      */
+    @Transactional(readOnly = true)
     public Optional<ReplenishmentOrder> getOrder(Long orderId) {
-        return Optional.ofNullable(orderStore.get(orderId));
+        return replenishmentOrderRepository.findById(orderId).map(this::toDto);
     }
 
     /**
      * 제품별 발주 내역 조회
      */
-    public java.util.List<ReplenishmentOrder> getOrdersByProduct(Long productId) {
-        return orderStore.values().stream()
-            .filter(order -> order.productId().equals(productId))
-            .sorted((o1, o2) -> o2.orderDate().compareTo(o1.orderDate()))
-            .toList();
+    @Transactional(readOnly = true)
+    public List<ReplenishmentOrder> getOrdersByProduct(Long productId) {
+        return replenishmentOrderRepository
+            .findByProductIdOrderByOrderDateDesc(productId)
+            .stream().map(this::toDto).toList();
     }
 
     /**
      * 상태별 발주 조회
      */
-    public java.util.List<ReplenishmentOrder> getOrdersByStatus(OrderStatus status) {
-        return orderStore.values().stream()
-            .filter(order -> order.status() == status)
-            .sorted((o1, o2) -> o2.orderDate().compareTo(o1.orderDate()))
-            .toList();
+    @Transactional(readOnly = true)
+    public List<ReplenishmentOrder> getOrdersByStatus(OrderStatus status) {
+        return replenishmentOrderRepository
+            .findByStatusOrderByOrderDateDesc(toEntityStatus(status))
+            .stream().map(this::toDto).toList();
     }
+
+    private static final List<ReplenishmentOrderEntity.OrderStatus> ACTIVE_STATUSES =
+            List.of(ReplenishmentOrderEntity.OrderStatus.PENDING, ReplenishmentOrderEntity.OrderStatus.IN_TRANSIT);
 
     /**
      * 지연된 발주 조회 (예상 도착일 초과)
      */
-    public java.util.List<ReplenishmentOrder> getDelayedOrders() {
-        LocalDateTime now = LocalDateTime.now();
-        return orderStore.values().stream()
-            .filter(order -> order.status() == OrderStatus.IN_TRANSIT || order.status() == OrderStatus.PENDING)
-            .filter(order -> order.expectedArrival().isBefore(now))
-            .sorted((o1, o2) -> o1.expectedArrival().compareTo(o2.expectedArrival()))
-            .toList();
+    @Transactional(readOnly = true)
+    public List<ReplenishmentOrder> getDelayedOrders() {
+        return replenishmentOrderRepository.findDelayedOrders(ACTIVE_STATUSES, LocalDateTime.now())
+            .stream().map(this::toDto).toList();
     }
 
     /**
      * 발주 통계 조회
      */
+    @Transactional(readOnly = true)
     public OrderStatistics getOrderStatistics() {
-        long totalOrders = orderStore.size();
-        long pendingOrders = orderStore.values().stream()
-            .filter(o -> o.status() == OrderStatus.PENDING).count();
-        long inTransitOrders = orderStore.values().stream()
-            .filter(o -> o.status() == OrderStatus.IN_TRANSIT).count();
-        long receivedOrders = orderStore.values().stream()
-            .filter(o -> o.status() == OrderStatus.RECEIVED).count();
-        long cancelledOrders = orderStore.values().stream()
-            .filter(o -> o.status() == OrderStatus.CANCELLED).count();
+        long totalOrders     = replenishmentOrderRepository.count();
+        long pendingOrders   = replenishmentOrderRepository.countByStatus(ReplenishmentOrderEntity.OrderStatus.PENDING);
+        long inTransitOrders = replenishmentOrderRepository.countByStatus(ReplenishmentOrderEntity.OrderStatus.IN_TRANSIT);
+        long receivedOrders  = replenishmentOrderRepository.countByStatus(ReplenishmentOrderEntity.OrderStatus.RECEIVED);
+        long cancelledOrders = replenishmentOrderRepository.countByStatus(ReplenishmentOrderEntity.OrderStatus.CANCELLED);
+        long delayedOrders   = replenishmentOrderRepository.findDelayedOrders(ACTIVE_STATUSES, LocalDateTime.now()).size();
 
-        double totalCost = orderStore.values().stream()
-            .filter(o -> o.status() == OrderStatus.RECEIVED)
-            .mapToDouble(o -> o.totalCost().doubleValue())
-            .sum();
+        BigDecimal totalCostBd = replenishmentOrderRepository.sumTotalCostByStatus(ReplenishmentOrderEntity.OrderStatus.RECEIVED);
+        double totalCost = totalCostBd != null ? totalCostBd.doubleValue() : 0.0;
 
-        long delayedOrders = getDelayedOrders().size();
-
-        double averageLeadTime = orderStore.values().stream()
-            .filter(o -> o.status() == OrderStatus.RECEIVED && o.actualArrival() != null)
-            .mapToLong(o -> java.time.Duration.between(o.orderDate(), o.actualArrival()).toDays())
+        // 평균 리드타임: DB에서 계산하지 않고 Java에서 집계 (이식성)
+        double averageLeadTime = replenishmentOrderRepository
+            .findByStatusOrderByOrderDateDesc(ReplenishmentOrderEntity.OrderStatus.RECEIVED)
+            .stream()
+            .filter(e -> e.getActualArrival() != null)
+            .mapToLong(e -> java.time.Duration.between(e.getOrderDate(), e.getActualArrival()).toDays())
             .average()
             .orElse(0.0);
 
         return new OrderStatistics(
-            totalOrders,
-            pendingOrders,
-            inTransitOrders,
-            receivedOrders,
-            cancelledOrders,
-            delayedOrders,
-            totalCost,
-            averageLeadTime
+            totalOrders, pendingOrders, inTransitOrders,
+            receivedOrders, cancelledOrders, delayedOrders,
+            totalCost, averageLeadTime
         );
     }
 
-    /**
-     * 발주 추적 번호 생성
-     */
+    // ── 변환 헬퍼 ──────────────────────────────────────────────────────
+
+    private ReplenishmentOrder toDto(ReplenishmentOrderEntity e) {
+        return new ReplenishmentOrder(
+            e.getId(),
+            e.getProductId(),
+            e.getProductName(),
+            e.getQuantity(),
+            e.getTotalCost(),
+            toDtoStatus(e.getStatus()),
+            e.getOrderDate(),
+            e.getExpectedArrival(),
+            e.getLeadTimeDays(),
+            e.getActualArrival(),
+            e.getTrackingNumber()
+        );
+    }
+
+    private OrderStatus toDtoStatus(ReplenishmentOrderEntity.OrderStatus s) {
+        return switch (s) {
+            case PENDING    -> OrderStatus.PENDING;
+            case IN_TRANSIT -> OrderStatus.IN_TRANSIT;
+            case RECEIVED   -> OrderStatus.RECEIVED;
+            case CANCELLED  -> OrderStatus.CANCELLED;
+        };
+    }
+
+    private ReplenishmentOrderEntity.OrderStatus toEntityStatus(OrderStatus s) {
+        return switch (s) {
+            case PENDING    -> ReplenishmentOrderEntity.OrderStatus.PENDING;
+            case IN_TRANSIT -> ReplenishmentOrderEntity.OrderStatus.IN_TRANSIT;
+            case RECEIVED   -> ReplenishmentOrderEntity.OrderStatus.RECEIVED;
+            case CANCELLED  -> ReplenishmentOrderEntity.OrderStatus.CANCELLED;
+        };
+    }
+
     private String generateTrackingNumber(Long productId) {
         return String.format("REP-%d-%d-%d",
             productId,
@@ -240,7 +227,7 @@ public class ReplenishmentOrderService {
             (int)(Math.random() * 1000));
     }
 
-    // Enums & Records
+    // ── 공개 타입 (하위 호환 유지) ──────────────────────────────────────
 
     public enum OrderStatus {
         PENDING("발주 대기"),
@@ -264,7 +251,7 @@ public class ReplenishmentOrderService {
         Long productId,
         String productName,
         int quantity,
-        java.math.BigDecimal totalCost,
+        BigDecimal totalCost,
         OrderStatus status,
         LocalDateTime orderDate,
         LocalDateTime expectedArrival,

@@ -1,5 +1,6 @@
 package com.livemart.product.graphql;
 
+import com.livemart.common.exception.BusinessException;
 import com.livemart.product.domain.Category;
 import com.livemart.product.domain.Product;
 import com.livemart.product.domain.ProductStatus;
@@ -88,7 +89,7 @@ public class ProductGraphqlController {
         log.info("GraphQL 상품 생성: {}", input);
 
         Category category = categoryRepository.findById(Long.parseLong(input.get("categoryId").toString()))
-                .orElseThrow(() -> new RuntimeException("카테고리를 찾을 수 없습니다"));
+                .orElseThrow(() -> BusinessException.notFound("Category", input.get("categoryId")));
 
         Product product = Product.builder()
                 .name((String) input.get("name"))
@@ -111,7 +112,7 @@ public class ProductGraphqlController {
         log.info("GraphQL 상품 수정: id={}, input={}", id, input);
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + id));
+                .orElseThrow(() -> BusinessException.notFound("Product", id));
 
         String name = input.get("name") != null ? (String) input.get("name") : product.getName();
         String description = input.get("description") != null ? (String) input.get("description") : product.getDescription();
@@ -127,7 +128,7 @@ public class ProductGraphqlController {
         log.info("GraphQL 재고 업데이트: id={}, quantity={}", id, quantity);
 
         Product product = productRepository.findByIdWithLock(id)
-                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + id));
+                .orElseThrow(() -> BusinessException.notFound("Product", id));
 
         product.updateStock(quantity);
         return productRepository.save(product);
@@ -138,7 +139,7 @@ public class ProductGraphqlController {
         log.info("GraphQL 상품 상태 변경: id={}, status={}", id, status);
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + id));
+                .orElseThrow(() -> BusinessException.notFound("Product", id));
 
         product.changeStatus(status);
         return productRepository.save(product);
