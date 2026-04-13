@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.graphql.data.method.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import java.math.BigDecimal;
@@ -85,6 +86,7 @@ public class ProductGraphqlController {
     // ======================== Mutation ========================
 
     @MutationMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SELLER')")
     public Product createProduct(@Argument("input") Map<String, Object> input) {
         log.info("GraphQL 상품 생성: {}", input);
 
@@ -108,6 +110,7 @@ public class ProductGraphqlController {
     }
 
     @MutationMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SELLER')")
     public Product updateProduct(@Argument Long id, @Argument("input") Map<String, Object> input) {
         log.info("GraphQL 상품 수정: id={}, input={}", id, input);
 
@@ -124,6 +127,7 @@ public class ProductGraphqlController {
     }
 
     @MutationMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SELLER')")
     public Product updateStock(@Argument Long id, @Argument int quantity) {
         log.info("GraphQL 재고 업데이트: id={}, quantity={}", id, quantity);
 
