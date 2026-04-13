@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,6 +31,7 @@ public class ImageUploadController {
 
     @Operation(summary = "상품 이미지 업로드", description = "AWS S3에 상품 이미지를 업로드합니다")
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SELLER')")
     public ResponseEntity<Map<String, String>> uploadImage(
             @PathVariable Long productId,
             @RequestParam("file") MultipartFile file) throws IOException {
@@ -58,6 +60,7 @@ public class ImageUploadController {
 
     @Operation(summary = "상품 이미지 삭제")
     @DeleteMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SELLER')")
     public ResponseEntity<Void> deleteImage(
             @PathVariable Long productId,
             @RequestParam String imageUrl) {

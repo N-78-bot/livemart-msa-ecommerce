@@ -34,7 +34,7 @@ public class TossPaymentClient {
     private static final int CONNECT_TIMEOUT_MS = 3_000;
     private static final int READ_TIMEOUT_MS    = 10_000;
 
-    @Value("${toss.payments.secret-key:test_sk_zXLkKEypNArWmo50nX3lmeaxYG5R}")
+    @Value("${toss.payments.secret-key}")
     private String secretKey;
 
     private final RestTemplate restTemplate;
