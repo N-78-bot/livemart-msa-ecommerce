@@ -77,7 +77,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Publish test results
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         if: always()
         with:
           name: Tests — ${{ matrix.service }}
