@@ -38,12 +38,12 @@ spring:
 
   graphql:
     graphiql:
-      enabled: true
+      enabled: ${GRAPHIQL_ENABLED:false}
       path: /graphiql
     path: /graphql
     schema:
       printer:
-        enabled: true
+        enabled: ${GRAPHQL_SCHEMA_PRINTER_ENABLED:false}
 
   # AI 기능은 OPENAI_API_KEY 환경변수가 설정되어 있을 때만 활성화됩니다
   # ai:

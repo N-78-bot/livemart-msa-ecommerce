@@ -11,7 +11,7 @@ services:
     environment:
       POSTGRES_DB: userdb
       POSTGRES_USER: userapp
-      POSTGRES_PASSWORD: user123
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:-local-user-dev}
     ports:
       - "5434:5432"
     volumes:
@@ -24,7 +24,7 @@ services:
     environment:
       POSTGRES_DB: productdb
       POSTGRES_USER: productapp
-      POSTGRES_PASSWORD: product123
+      POSTGRES_PASSWORD: ${PRODUCT_DB_PASSWORD:-local-product-dev}
     ports:
       - "5435:5432"
     volumes:
@@ -37,7 +37,7 @@ services:
     environment:
       POSTGRES_DB: orderdb
       POSTGRES_USER: orderapp
-      POSTGRES_PASSWORD: order123
+      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD:-local-order-dev}
     ports:
       - "5436:5432"
     volumes:
@@ -50,7 +50,7 @@ services:
     environment:
       POSTGRES_DB: paymentdb
       POSTGRES_USER: paymentapp
-      POSTGRES_PASSWORD: payment123
+      POSTGRES_PASSWORD: ${PAYMENT_DB_PASSWORD:-local-payment-dev}
     ports:
       - "5437:5432"
     volumes:
@@ -63,7 +63,7 @@ services:
     environment:
       POSTGRES_DB: inventorydb
       POSTGRES_USER: inventoryapp
-      POSTGRES_PASSWORD: inventory123
+      POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD:-local-inventory-dev}
     ports:
       - "5438:5432"
     volumes:
@@ -76,7 +76,7 @@ services:
     environment:
       POSTGRES_DB: analyticsdb
       POSTGRES_USER: analyticsapp
-      POSTGRES_PASSWORD: analytics123
+      POSTGRES_PASSWORD: ${ANALYTICS_DB_PASSWORD:-local-analytics-dev}
     ports:
       - "5433:5432"
     volumes:

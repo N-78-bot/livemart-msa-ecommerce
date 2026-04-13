@@ -6,7 +6,7 @@
 
 1. [vercel.com](https://vercel.com) 에서 GitHub 계정으로 가입/로그인
 2. 대시보드에서 **"Add New Project"** 클릭
-3. GitHub 저장소 목록에서 `livemart-clean` 선택 후 **"Import"** 클릭
+3. GitHub 저장소 목록에서 `livemart-msa-ecommerce` 선택 후 **"Import"** 클릭
 4. 루트에 `vercel.json`이 있으므로 Vercel이 자동으로 `frontend/` 디렉토리를 감지함
    - Framework Preset: **Next.js** (자동 감지)
    - Root Directory: **frontend** (자동 감지)
@@ -128,7 +128,6 @@ cd frontend && npm run dev
 
 ## 테스트 계정
 
-| 이메일 | 비밀번호 | 역할 |
-|--------|----------|------|
-| admin@livemart.com | Test1234 | 관리자 |
-| test@livemart.com | Test1234 | 일반 회원 |
+로컬 실행 후 `/api/users/signup` 엔드포인트로 직접 계정을 생성하거나,
+Flyway 마이그레이션 시드 데이터를 통해 초기 계정이 생성됩니다.
+데모 계정 정보가 필요하면 [Issues](https://github.com/parkmin-je/livemart-msa-ecommerce/issues)로 문의해주세요.

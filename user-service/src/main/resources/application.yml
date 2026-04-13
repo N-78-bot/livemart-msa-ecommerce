@@ -211,8 +211,9 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID:dev-google-id}
             client-secret: ${GOOGLE_CLIENT_SECRET:dev-google-secret}
 
+# 로컬 전용 JWT secret — 개발환경에서만 사용. 운영에서는 반드시 JWT_SECRET 환경변수 설정
 jwt:
-  secret: ${JWT_SECRET:local-dev-jwt-secret-replace-before-production-deploy}
+  secret: ${JWT_SECRET:local-dev-only-DO-NOT-use-in-production-must-be-256bit-minimum}
 
 ---
 # ── Railway 클라우드 프로파일 (spring.profiles.active=railway) ──

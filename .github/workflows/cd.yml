@@ -26,6 +26,10 @@ jobs:
           - product-service
           - order-service
           - payment-service
+          - inventory-service
+          - notification-service
+          - analytics-service
+          - ai-service
           - api-gateway
           - eureka-server
 
@@ -108,7 +112,7 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,scope=frontend,mode=max
           build-args: |
-            NEXT_PUBLIC_API_URL=http://api-gateway:8080
+            NEXT_PUBLIC_API_URL=http://api-gateway:8888
 
   # ── 보안 취약점 스캔 (Trivy) ─────────────────────────────────
   security-scan:

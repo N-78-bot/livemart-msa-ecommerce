@@ -14,6 +14,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0] — 2026-04-13
+
+### Security
+
+- **README**: 운영 서버 IP 및 테스트 계정 비밀번호 공개 노출 제거
+- **docker-compose.yml**: 약한 패스워드 기본값(user123 등) 전면 제거 → `.env.example` 필수값으로 이동 (`:?` 오류 처리)
+- **product-service**: GraphiQL 운영 노출 수정 (`enabled: ${GRAPHIQL_ENABLED:false}`)
+- **security.yml**: OWASP ZAP DAST 타겟 포트 수정 (8080 → 8888)
+
+### Changed
+
+- **README**: 아키텍처 다이어그램 정확성 개선 — 7개 서비스 → 8개 (notification, analytics 추가)
+- **README**: Spring Boot 버전 배지 3.3.6 → 3.4.0 통일 (build.gradle 기준)
+- **README**: 서비스 구성 목록에 notification-service, analytics-service 명시 추가
+
+### Removed
+
+- **CI/CD**: `ci-cd.yml` 중복 워크플로우 삭제 (`ci.yml` + `cd.yml`로 역할 분리)
+- **README**: 개발 환경 OS 정보 제거 (포트폴리오 불필요 정보)
+
+### Chore
+
+- `.env.example` 전면 보강: Grafana 계정, SMTP, Toss Payments, OpenRouter 등 모든 필수 환경변수 포함
+- `master` 브랜치 미병합 커밋 main에 통합 (보안 패치 우선 적용)
+
+---
+
 ## [2.0.0] — 2026-03-17
 
 ### Added
@@ -153,7 +180,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 10개 마이크로서비스 초기 구축:
   - `api-gateway` (Spring Cloud Gateway, Rate Limiting, JWT 검증)
   - `order-service` (주문, Saga Choreography)
-  - `payment-service` (Stripe 결제)
+  - `payment-service` (Toss Payments 결제)
   - `product-service` (상품 카탈로그)
   - `user-service` (회원, JWT, OAuth2)
   - `inventory-service` (재고 관리)

@@ -146,7 +146,7 @@ jobs:
       - name: ZAP Baseline Scan (API Gateway)
         uses: zaproxy/action-baseline@v0.15.0
         with:
-          target: 'http://localhost:8080'
+          target: 'http://localhost:8888'
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a -j'
           fail_action: false  # 경고만 (CI 블로킹 없음) — 초기 단계

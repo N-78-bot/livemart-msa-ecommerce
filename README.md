@@ -3,7 +3,7 @@
 [![CI](https://github.com/parkmin-je/livemart-msa-ecommerce/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/parkmin-je/livemart-msa-ecommerce/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/parkmin-je/livemart-msa-ecommerce/branch/main/graph/badge.svg)](https://codecov.io/gh/parkmin-je/livemart-msa-ecommerce)
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.6-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.0-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -18,7 +18,6 @@
 | | 링크 |
 |---|---|
 | **🌐 프론트엔드 데모** | [livemart-parkmin-jes-projects.vercel.app](https://livemart-parkmin-jes-projects.vercel.app) |
-| **⚙️ API 서버 (GCP VM)** | [34.64.189.54:8888/actuator/health](http://34.64.189.54:8888/actuator/health) |
 | **📖 블로그 — Saga+Outbox 구현기** | [docs/blog/01-saga-outbox-패턴-실전-구현기.md](docs/blog/01-saga-outbox-패턴-실전-구현기.md) |
 | **📖 블로그 — 결제 취약점 발견·수정** | [docs/blog/02-결제-취약점-발견-수정기.md](docs/blog/02-결제-취약점-발견-수정기.md) |
 | **📖 블로그 — 분산 SSE 구현기** | [docs/blog/03-redis-pubsub-분산-SSE-구현기.md](docs/blog/03-redis-pubsub-분산-SSE-구현기.md) |
@@ -36,13 +35,15 @@ graph TB
         Gateway["⚡ API Gateway<br/>Spring Cloud Gateway<br/>JWT 검증 · Rate Limiting<br/>Circuit Breaker"]
     end
 
-    subgraph SVC["Service Layer (7개 마이크로서비스)"]
+    subgraph SVC["Service Layer (8개 마이크로서비스)"]
         direction LR
         US["👤 user-service<br/>JWT · OAuth2 · MFA(TOTP)"]
         PS["📦 product-service<br/>Elasticsearch · gRPC서버 · Redis"]
         OS["🛒 order-service<br/>Saga · Outbox · CQRS · Event Sourcing"]
         PAY["💳 payment-service<br/>Toss · Idempotency Key"]
         INV["📊 inventory-service<br/>Redisson 분산 락"]
+        NS["🔔 notification-service<br/>Kafka · Redis Pub/Sub · SSE"]
+        AN["📈 analytics-service<br/>Spring Batch · 정산"]
         AI["🤖 ai-service<br/>Spring AI 1.0 · OpenRouter"]
     end
 
@@ -53,7 +54,7 @@ graph TB
     end
 
     Client -->|"HTTPS"| Gateway
-    Gateway --> US & PS & OS & PAY & INV & AI
+    Gateway --> US & PS & OS & PAY & INV & NS & AN & AI
     OS -->|"gRPC (Protobuf)"| PS
     PS & US -->|"Cache-Aside"| RD
     US & PS & OS & PAY & INV --> PG
@@ -170,7 +171,7 @@ try {
 | 분류 | 기술 |
 |------|------|
 | Language | Java 21 (Virtual Threads / Project Loom) |
-| Framework | Spring Boot 3.3.6 · Spring Cloud 2023.0.3 |
+| Framework | Spring Boot 3.4.0 · Spring Cloud 2023.0.3 |
 | API | REST · gRPC · WebSocket · SSE · GraphQL |
 | 메시징 | Apache Kafka (DLQ · 병렬 소비 · Outbox) |
 | 캐싱/세션 | Redis Upstash (Cache-Aside · Rate Limiting · Pub/Sub) |
@@ -240,6 +241,8 @@ try {
 ├── order-service/         주문 · Saga · Outbox · CQRS · 쿠폰 · 반품 · Event Sourcing
 ├── payment-service/       Toss 결제 · 환불 · Kafka DLQ · 금액 서버 검증
 ├── inventory-service/     재고 · Redisson 분산 락
+├── notification-service/  이메일·SSE 알림 · Redis Pub/Sub 분산 브로드캐스트
+├── analytics-service/     Spring Batch · 일일 정산 · 월별 리포트
 ├── ai-service/            Spring AI 1.0 · OpenRouter
 └── common/                Outbox · Event Sourcing · RFC 7807 에러 · 멱등성
 ```
@@ -276,17 +279,17 @@ cd frontend && npm install && npm run dev
 # → http://localhost:3000
 ```
 
-### GCP VM 배포 (현재 운영 중)
+### GCP VM 배포
 
-7개 마이크로서비스가 GCP VM에서 Docker Compose로 운영되고 있습니다.
+8개 마이크로서비스가 GCP VM에서 Docker Compose로 운영됩니다.
 
 ```bash
 # GCP VM에서 실행
 git pull origin main
 docker compose -f docker-compose.prod.yml up -d
 
-# 헬스체크
-curl http://34.64.189.54:8888/actuator/health
+# 헬스체크 (API Gateway)
+curl http://<GCP_VM_IP>:8888/actuator/health
 # → {"status":"UP"}
 ```
 
@@ -296,10 +299,8 @@ curl http://34.64.189.54:8888/actuator/health
 
 ### 테스트 계정
 
-| 이메일 | 비밀번호 | 역할 |
-|--------|----------|------|
-| admin@livemart.com | Test1234 | 관리자 |
-| test@livemart.com | Test1234 | 일반 회원 |
+로컬 실행 후 회원가입 또는 `.env`의 초기 계정 설정을 통해 접근하세요.
+데모 계정이 필요하면 [Issues](https://github.com/parkmin-je/livemart-msa-ecommerce/issues)로 문의해주세요.
 
 ### 포트 맵
 
@@ -346,4 +347,4 @@ k6 run tests/load/k6-order-flow.js
 
 ## 개발 환경
 
-- **OS**: Windows 11 · **IDE**: IntelliJ IDEA · **JDK**: OpenJDK 21 · **Build**: Gradle 8.10
+- **IDE**: IntelliJ IDEA · **JDK**: OpenJDK 21 · **Build**: Gradle 8.10

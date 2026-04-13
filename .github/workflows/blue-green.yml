@@ -198,14 +198,14 @@ jobs:
           kubectl port-forward \
             -l app=${SERVICE},slot=${NEW_SLOT} \
             -n ${NAMESPACE} \
-            8080:8080 &
+            8888:8888 &
           sleep 5
           echo "PORT_FORWARD_PID=$!" >> $GITHUB_ENV
 
       - name: Run Smoke Test against Green
         run: |
           k6 run tests/k6/smoke-test.js \
-            -e BASE_URL=http://localhost:8080 \
+            -e BASE_URL=http://localhost:8888 \
             --out json=smoke-results.json
         continue-on-error: false
 

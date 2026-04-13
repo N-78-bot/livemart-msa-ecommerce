@@ -48,7 +48,7 @@
 
 - **JWT httpOnly Cookie**: XSS를 통한 토큰 탈취 방지
 - **SameSite=Strict**: CSRF 방지
-- **Access Token TTL**: 15분 / Refresh Token TTL: 7일
+- **Access Token TTL**: 1시간 / Refresh Token TTL: 7일
 - **JWT Blacklist**: Redis 기반 로그아웃 토큰 무효화
 - **OAuth2**: Google / Kakao / Naver (PKCE 적용)
 - **MFA**: TOTP (Google Authenticator) + WebAuthn (패스키)
@@ -72,7 +72,7 @@
 | Trivy | PR/매일 02:00 UTC | 컨테이너 + 파일시스템 취약점 스캔 (CRITICAL/HIGH) |
 | Gitleaks | 모든 push | 하드코딩 시크릿 탐지 (전체 히스토리) |
 | CodeQL | PR + 매일 | Java SAST (security-extended 룰셋) |
-| OWASP ZAP | PR + 매주 | DAST API Gateway 대상 |
+| OWASP ZAP | PR + 매일 02:00 UTC | DAST API Gateway 대상 (포트 8888) |
 | Dependabot | 매주 월요일 | Gradle/npm/Actions 의존성 자동 업데이트 |
 | npm audit | PR | 프론트엔드 의존성 취약점 감사 |
 
@@ -87,9 +87,10 @@
 
 ### Payment Security
 
-- **PCI-DSS 컴플라이언스**: Stripe 위임 처리 (카드 데이터 직접 저장 금지)
+- **서버 금액 검증**: 클라이언트 전달 금액 무시, order-service에서 실제 금액 재조회 (CVSS 9.3 취약점 수정)
 - **Idempotency Key**: 결제 중복 청구 방지
-- **Stripe Webhook 서명 검증**: `Stripe-Signature` 헤더 검증
+- **Toss Payments Webhook 검증**: `Authorization` Basic 헤더 서명 검증
+- **결제 정보 비저장**: 카드 데이터 직접 저장 금지, Toss 위임 처리
 
 ---
 
