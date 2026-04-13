@@ -150,26 +150,45 @@ public class AutoReplenishmentService {
         return Math.max(orderQuantity, minStock);
     }
 
+    /**
+     * 최소 재고 기준값 반환.
+     * 현재는 모든 제품에 동일한 기본값 적용.
+     * 추후 Product 엔티티에 minStock 필드 추가 후 제품별 설정 지원 예정.
+     */
     private int getMinStock(Product product) {
-        // 실제로는 제품별 설정 또는 판매 데이터 기반
         return DEFAULT_MIN_STOCK;
     }
 
+    /**
+     * 최대 재고 기준값 반환.
+     * 추후 제품별 설정 지원 예정.
+     */
     private int getMaxStock(Product product) {
         return DEFAULT_MAX_STOCK;
     }
 
+    /**
+     * 발주 트리거 재고 기준값 반환.
+     * 추후 제품별 설정 지원 예정.
+     */
     private int getReorderPoint(Product product) {
         return DEFAULT_REORDER_POINT;
     }
 
+    /**
+     * 안전 재고 기준값 반환.
+     * 추후 제품별 설정 지원 예정.
+     */
     private int getSafetyStock(Product product) {
         return DEFAULT_SAFETY_STOCK;
     }
 
+    /**
+     * 공급 리드타임(일) 반환.
+     * 추후 공급업체(Supplier) 엔티티 연동 후 공급업체별 리드타임 적용 예정.
+     */
     private int calculateLeadTime(Product product) {
-        // 실제로는 공급업체별 리드타임 데이터 사용
-        return 7; // 기본 7일
+        return 7;
     }
 
     private void publishLowStockAlert(Product product, int currentStock, int orderQuantity) {

@@ -67,6 +67,15 @@ jobs:
           path: ${{ matrix.service }}/build/reports/jacoco/test/
           retention-days: 7
 
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{ matrix.service }}/build/reports/jacoco/test/jacocoTestReport.xml
+          flags: ${{ matrix.service }}
+          fail_ci_if_error: false
+
       - name: Publish test results
         uses: dorny/test-reporter@v1
         if: always()
@@ -238,6 +247,7 @@ jobs:
           merge-multiple: false
 
       - name: SonarQube Scan (Quality Gate 강제)
+        if: ${{ secrets.SONAR_TOKEN != '' && secrets.SONAR_HOST_URL != '' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -255,6 +265,12 @@ jobs:
             --no-daemon
         # Quality Gate 실패 시 PR 차단 (main 브랜치 보호)
         continue-on-error: ${{ github.event_name == 'pull_request' && github.base_ref != 'main' }}
+
+      - name: SonarQube 토큰 미설정 안내
+        if: ${{ secrets.SONAR_TOKEN == '' || secrets.SONAR_HOST_URL == '' }}
+        run: |
+          echo "⚠️ SONAR_TOKEN 또는 SONAR_HOST_URL 시크릿이 설정되지 않아 SonarQube 분석을 건너뜁니다." >> $GITHUB_STEP_SUMMARY
+          echo "SonarCloud 연동: https://sonarcloud.io" >> $GITHUB_STEP_SUMMARY
 
       - name: Quality Gate 결과 요약
         if: always()
