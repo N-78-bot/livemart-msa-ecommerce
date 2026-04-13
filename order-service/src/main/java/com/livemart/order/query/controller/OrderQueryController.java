@@ -12,8 +12,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * CQRS Query Controller - 읽기 전용 API
@@ -42,7 +45,15 @@ public class OrderQueryController {
     @GetMapping("/user/{userId}/summary")
     public ResponseEntity<Page<OrderSummaryResponse>> getUserOrderSummaries(
             @PathVariable Long userId,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication auth) {
+        if (auth != null) {
+            Long currentUserId = auth.getPrincipal() instanceof Long l ? l : Long.parseLong(auth.getName());
+            boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (!isAdmin && !userId.equals(currentUserId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다");
+            }
+        }
         return ResponseEntity.ok(orderQueryService.getUserOrderSummaries(userId, pageable));
     }
 

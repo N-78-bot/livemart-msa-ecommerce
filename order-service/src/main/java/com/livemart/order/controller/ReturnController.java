@@ -10,7 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @Tag(name = "Return API", description = "반품/환불 관리 API")
 @RestController
@@ -42,7 +45,14 @@ public class ReturnController {
     @Operation(summary = "사용자 반품 내역")
     @GetMapping("/user/{userId}")
     public ResponseEntity<Page<ReturnRequestDto.Response>> getUserReturns(
-            @PathVariable Long userId, Pageable pageable) {
+            @PathVariable Long userId, Pageable pageable, Authentication auth) {
+        if (auth != null) {
+            Long currentUserId = auth.getPrincipal() instanceof Long l ? l : Long.parseLong(auth.getName());
+            boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (!isAdmin && !userId.equals(currentUserId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다");
+            }
+        }
         return ResponseEntity.ok(returnService.getUserReturns(userId, pageable));
     }
 
