@@ -14,6 +14,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0] — 2026-04-13
+
+### Security
+
+- **api-gateway**: X-User-Id / X-User-Role 헤더 위조(Spoofing) 차단 — 공개 경로·JWT 경로·API Key 경로 모두에서 클라이언트 전달 헤더 제거 후 검증된 값으로 교체
+- **frontend**: 하드코딩된 GCP VM IP(34.64.189.54) 전면 제거 — `GCP_API_URL` 환경변수로 대체 (next.config.js, page.tsx, route.ts, CSP)
+- **payment-service**: TrustedHeaderAuthFilter 추가 — X-User-Id/X-User-Role 기반 SecurityContext 설정
+- **SECURITY.md**: Access Token TTL 15분 → 1시간 수정 (application.yml 실제값 반영)
+
+### Fixed
+
+- **k8s/base/ingress.yml**: api-gateway 백엔드 포트 8080 → 8888
+- **k8s/base/configmap.yml**: Prometheus 스크레이핑 api-gateway 타겟 포트 8080 → 8888
+- **k8s/base/network-policy.yml**: Ingress → api-gateway 허용 포트 8080 → 8888, Prometheus 스크레이핑 포트 목록 실제 서비스 포트로 교체
+- **k8s/base/istio-mesh-config.yml**: VirtualService 기본 라우트 api-gateway 포트 8080 → 8888
+- **k8s/services/frontend.yml**: NEXT_PUBLIC_API_URL api-gateway 포트 8080 → 8888
+- **helm/livemart**: gateway.port 8080 → 8888, ingress 템플릿 하드코딩 포트 제거
+- **ci.yml**: inventory-service 빌드 매트릭스 누락 추가, NEXT_PUBLIC_API_URL 포트 수정
+- **load-test.yml**: 기본 base_url 8080 → 8888
+- **CONTRIBUTING.md**: 커밋 예시 "Stripe 이중 청구" → "Toss 이중 청구"
+
+---
+
 ## [2.1.0] — 2026-04-13
 
 ### Security
