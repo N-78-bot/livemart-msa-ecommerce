@@ -23,7 +23,7 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
     implementation 'org.springframework.kafka:spring-kafka'
-    implementation 'org.redisson:redisson-spring-boot-starter:3.40.2'
+    implementation 'org.redisson:redisson-spring-boot-starter:4.3.1'
     implementation 'io.grpc:grpc-netty-shaded:1.80.0'
     implementation 'io.grpc:grpc-protobuf:1.80.0'
     implementation 'io.grpc:grpc-stub:1.80.0'
