@@ -8,6 +8,7 @@ import java.time.Instant;
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class PaymentResponse {
     private Long id;
+    private Long userId;
     private String transactionId;
     private String orderNumber;
     private BigDecimal amount;
@@ -22,7 +23,7 @@ public class PaymentResponse {
 
     public static PaymentResponse from(Payment p) {
         return PaymentResponse.builder()
-                .id(p.getId()).transactionId(p.getTransactionId())
+                .id(p.getId()).userId(p.getUserId()).transactionId(p.getTransactionId())
                 .orderNumber(p.getOrderNumber()).amount(p.getAmount())
                 .refundedAmount(p.getRefundedAmount())
                 .paymentMethod(p.getPaymentMethod()).status(p.getStatus())
