@@ -120,7 +120,7 @@ public void onMessage(Message message, byte[] pattern) {
 
 ---
 
-### 4. 결제 금액 서버 검증 (CVSS 9.3 → 수정)
+### 4. 결제 금액 서버 검증
 
 초기에 클라이언트가 전달한 금액을 그대로 결제 처리했습니다. Burp Suite로 amount 필드를 1원으로 조작하면 임의 금액 결제가 가능했습니다. **order-service FeignClient로 실제 주문 금액을 서버에서 재조회**하여 수정했습니다.
 
@@ -172,11 +172,11 @@ try {
 |------|------|
 | Language | Java 21 (Virtual Threads / Project Loom) |
 | Framework | Spring Boot 3.4.0 · Spring Cloud 2023.0.3 |
-| API | REST · gRPC · WebSocket · SSE · GraphQL |
+| API | REST · gRPC · WebSocket · SSE |
 | 메시징 | Apache Kafka (DLQ · 병렬 소비 · Outbox) |
 | 캐싱/세션 | Redis Upstash (Cache-Aside · Rate Limiting · Pub/Sub) |
 | 검색 | Elasticsearch 8 (nori 한글 형태소) |
-| 인증 | JWT httpOnly · OAuth2 PKCE (Google/Kakao/Naver) · MFA (TOTP · WebAuthn) |
+| 인증 | JWT httpOnly · OAuth2 PKCE (Google/Kakao/Naver) · MFA (TOTP) |
 | 결제 | Toss Payments (서버 금액 검증 · Idempotency Key) |
 | 분산 락 | Redisson (재고 Race Condition 방지) |
 | Circuit Breaker | Resilience4j |
@@ -204,7 +204,7 @@ try {
 | 계약 테스트 | Spring Cloud Contract (order ↔ payment) |
 | E2E 테스트 | Playwright (checkout · search · admin) |
 | 부하 테스트 | k6 (smoke · load · spike · stress) |
-| 커버리지 | JaCoCo (Service 70% · Controller 60%) |
+| 커버리지 | JaCoCo |
 
 ### 인프라
 
@@ -236,7 +236,7 @@ try {
 
 ```
 ├── api-gateway/           Spring Cloud Gateway · Rate Limiting · JWT 검증
-├── user-service/          회원 · JWT · OAuth2 · MFA(TOTP/WebAuthn) · 위시리스트
+├── user-service/          회원 · JWT · OAuth2 · MFA(TOTP) · 위시리스트
 ├── product-service/       상품 · Elasticsearch · gRPC 서버 · Redis 캐싱
 ├── order-service/         주문 · Saga · Outbox · CQRS · 쿠폰 · 반품 · Event Sourcing
 ├── payment-service/       Toss 결제 · 환불 · Kafka DLQ · 금액 서버 검증
@@ -281,7 +281,7 @@ cd frontend && npm install && npm run dev
 
 ### GCP VM 배포
 
-8개 마이크로서비스가 GCP VM에서 Docker Compose로 운영됩니다.
+마이크로서비스들이 GCP VM에서 Docker Compose로 운영됩니다.
 
 ```bash
 # GCP VM에서 실행
