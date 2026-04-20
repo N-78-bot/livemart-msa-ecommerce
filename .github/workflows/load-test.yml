@@ -107,7 +107,7 @@ jobs:
           exit 1
 
       - name: 결과 아티팩트 업로드
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: k6-product-load-results
@@ -156,7 +156,7 @@ jobs:
           exit 1
 
       - name: 결과 아티팩트 업로드
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: k6-order-flow-results
@@ -193,7 +193,7 @@ jobs:
         continue-on-error: true  # 스파이크는 실패 허용 (결과 분석용)
 
       - name: 결과 아티팩트 업로드
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: k6-flash-sale-results
@@ -235,7 +235,7 @@ jobs:
           echo "::warning::검색 부하 테스트 임계값 초과 (경고)"
 
       - name: 결과 아티팩트 업로드
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: k6-search-load-results

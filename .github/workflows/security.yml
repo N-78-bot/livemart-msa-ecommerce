@@ -152,7 +152,7 @@ jobs:
           fail_action: false  # 경고만 (CI 블로킹 없음) — 초기 단계
 
       - name: Upload ZAP Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-report
