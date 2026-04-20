@@ -60,7 +60,7 @@ jobs:
         continue-on-error: false
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-${{ matrix.service }}
@@ -155,7 +155,7 @@ jobs:
         run: ./gradlew :${{ matrix.service }}:bootJar -x test --no-daemon --parallel
 
       - name: Upload JAR artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.service }}-jar
           path: ${{ matrix.service }}/build/libs/*.jar
