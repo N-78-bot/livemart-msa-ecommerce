@@ -47,7 +47,7 @@ const nextConfig = {
               "font-src 'self' https://fonts.gstatic.com https://*.daumcdn.net https://*.kakaocdn.net",
               "img-src 'self' data: blob: https://cdn.livemart.com http://localhost:* https:",
               "connect-src 'self' http://localhost:* ws://localhost:* https://api.livemart.com https://*.tosspayments.com https://t1.daumcdn.net https://*.kakaocdn.net https://*.daum.net",
-              "frame-src https://js.tosspayments.com https://pay.toss.im https://postcode.map.daum.net https://*.daumcdn.net https://*.kakaocdn.net",
+              "frame-src https://js.tosspayments.com https://pay.toss.im https://postcode.map.daum.net https://postcode.map.kakao.com https://*.daumcdn.net https://*.kakaocdn.net",
               "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",

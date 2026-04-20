@@ -120,6 +120,18 @@ export function AiChatbot() {
         }
       }
 
+      // 스트림 종료 후 content가 비어있으면 에러 메시지로 교체
+      if (!accumulated) {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
+            content: '죄송합니다. AI 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.',
+          };
+          return updated;
+        });
+      }
+
       // 세션 ID가 없으면 서버에서 새로 받기
       if (!sessionId) {
         const nonStreamRes = await fetch('/api/ai/chat', {
