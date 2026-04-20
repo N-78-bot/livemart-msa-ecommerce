@@ -42,7 +42,9 @@ export async function POST(request: NextRequest) {
             }
           }
           controller.enqueue(encoder.encode('data:[DONE]\n'));
-        } catch {
+        } catch (e) {
+          console.error('[AI stream error]', e);
+          controller.enqueue(encoder.encode('data:[ERROR]\n'));
           controller.enqueue(encoder.encode('data:[DONE]\n'));
         } finally {
           controller.close();

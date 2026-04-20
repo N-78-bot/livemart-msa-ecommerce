@@ -103,6 +103,11 @@ export function AiChatbot() {
             // "data:" 접두사(5자) 제거 → 실제 토큰 추출
             const token = line.slice(5);
             if (token === '[DONE]') continue;
+            if (token === '[ERROR]') {
+              accumulated = '__ERROR__';
+              hasNewContent = true;
+              continue;
+            }
             accumulated += token;
             hasNewContent = true;
           }
@@ -120,8 +125,8 @@ export function AiChatbot() {
         }
       }
 
-      // 스트림 종료 후 content가 비어있으면 에러 메시지로 교체
-      if (!accumulated) {
+      // 스트림 종료 후 content가 비어있거나 에러이면 에러 메시지로 교체
+      if (!accumulated || accumulated === '__ERROR__') {
         setMessages(prev => {
           const updated = [...prev];
           updated[updated.length - 1] = {
