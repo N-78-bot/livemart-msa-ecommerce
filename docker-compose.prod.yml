@@ -179,6 +179,9 @@ services:
       - PORT=8090
       - REDIS_URL=${REDIS_URL}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - SPRING_AI_OPENAI_API_KEY=${OPENROUTER_API_KEY}
+      - SPRING_AI_OPENAI_BASE_URL=https://openrouter.ai/api/v1
+      - SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL=google/gemma-3-27b-it:free
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
     restart: unless-stopped

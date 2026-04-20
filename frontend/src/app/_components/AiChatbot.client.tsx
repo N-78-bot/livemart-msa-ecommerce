@@ -103,6 +103,11 @@ export function AiChatbot() {
             // "data:" 접두사(5자) 제거 → 실제 토큰 추출
             const token = line.slice(5);
             if (token === '[DONE]') continue;
+            if (token === '[ERROR]') {
+              accumulated = '__ERROR__';
+              hasNewContent = true;
+              continue;
+            }
             accumulated += token;
             hasNewContent = true;
           }
@@ -118,6 +123,18 @@ export function AiChatbot() {
             return updated;
           });
         }
+      }
+
+      // 스트림 종료 후 content가 비어있거나 에러이면 에러 메시지로 교체
+      if (!accumulated || accumulated === '__ERROR__') {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
+            content: '죄송합니다. AI 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.',
+          };
+          return updated;
+        });
       }
 
       // 세션 ID가 없으면 서버에서 새로 받기
