@@ -57,6 +57,7 @@ services:
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
       - SPRING_FLYWAY_ENABLED=false
+      - CORS_ALLOWED_ORIGINS=https://livemart-parkmin-jes-projects.vercel.app
     restart: unless-stopped
 
   product-service:
