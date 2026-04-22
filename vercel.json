@@ -1,6 +1,5 @@
 {
   "framework": "nextjs",
-  "rootDirectory": "frontend",
   "regions": ["icn1"],
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
