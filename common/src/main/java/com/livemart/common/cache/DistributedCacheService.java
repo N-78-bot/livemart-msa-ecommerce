@@ -76,11 +76,11 @@ public class DistributedCacheService {
                     Thread.currentThread().interrupt();
                     break;
                 }
-                Object cached = redisTemplate.opsForValue().get(key);
-                if (cached != null) {
+                Object waited = redisTemplate.opsForValue().get(key);
+                if (waited != null) {
                     log.debug("Cache hit after wait: key={}", key);
                     @SuppressWarnings("unchecked")
-                    T result = (T) cached;
+                    T result = (T) waited;
                     return result;
                 }
             }
