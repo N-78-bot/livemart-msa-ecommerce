@@ -75,9 +75,12 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_URL=${REDIS_URL}
       - SPRING_DATA_REDIS_URL=${REDIS_URL}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
       - SPRING_FLYWAY_ENABLED=false
+      - MANAGEMENT_HEALTH_ELASTICSEARCH_ENABLED=false
+      - MANAGEMENT_TRACING_ENABLED=false
       - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
     restart: unless-stopped
 
@@ -116,6 +119,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_URL=${REDIS_URL}
       - SPRING_DATA_REDIS_URL=${REDIS_URL}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING=true
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
       - SPRING_FLYWAY_ENABLED=false
