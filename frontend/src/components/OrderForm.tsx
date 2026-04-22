@@ -49,6 +49,20 @@ export function OrderForm() {
     if (saved) try { setAddress(JSON.parse(saved)); } catch {}
     const name = localStorage.getItem('userName');
     if (name) setAddress(a => ({ ...a, recipient: a.recipient || name }));
+
+    // 사용자 프로필에서 전화번호 자동 조회
+    const fetchUserPhone = async () => {
+      try {
+        const res = await fetch('/api/users/me', { credentials: 'include' });
+        if (res.ok) {
+          const user = await res.json();
+          if (user.phoneNumber) {
+            setAddress(a => ({ ...a, phone: a.phone || user.phoneNumber }));
+          }
+        }
+      } catch {}
+    };
+    fetchUserPhone();
   }, []);
 
   // embed 모드: 팝업 대신 페이지 내 iframe으로 주소 검색 표시
@@ -100,13 +114,17 @@ export function OrderForm() {
     setLoading(true);
     try {
       const userId = localStorage.getItem('userId');
+      if (!userId) { toast.error('로그인이 필요합니다'); return; }
+
+      // 전화번호 공백 제거 (백엔드 패턴 ^01[0-9]-?\d{3,4}-?\d{4}$ 대응)
+      const phoneNumber = address.phone.trim().replace(/\s/g, '');
 
       // 백엔드 OrderCreateRequest 필드명에 맞게 전송
       const orderPayload = {
-        userId: userId ? Number(userId) : null,
+        userId: Number(userId),
         items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
         deliveryAddress: `[${address.zipCode}] ${address.address} ${address.detail}`.trim(),
-        phoneNumber: address.phone,
+        phoneNumber,
         paymentMethod,
         orderNote: address.memo || null,
       };
@@ -158,8 +176,9 @@ export function OrderForm() {
       router.push(`/orders/${orderId}`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : '주문 실패');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -180,12 +199,16 @@ export function OrderForm() {
                 />
               </div>
               <div>
-                <label className="form-label">연락처 *</label>
-                <input
-                  type="tel" value={address.phone}
-                  onChange={e => setAddress(a => ({ ...a, phone: e.target.value }))}
-                  placeholder="010-0000-0000" className="form-input" required
-                />
+                <label className="form-label">연락처</label>
+                <div
+                  className="form-input flex items-center"
+                  style={{ background: '#F7F6F1', cursor: 'default', userSelect: 'text' }}
+                >
+                  <span style={{ color: address.phone ? '#0E0E0E' : 'rgba(14,14,14,0.35)' }}>
+                    {address.phone || '내정보에서 전화번호를 등록해주세요'}
+                  </span>
+                </div>
+                <input type="hidden" value={address.phone} required />
               </div>
             </div>
             <div className="flex gap-2">
