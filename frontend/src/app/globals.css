@@ -206,9 +206,10 @@
 
   /* ── Form controls ── */
   .form-input {
-    @apply w-full px-4 py-2.5 text-sm outline-none transition-shadow bg-white;
-    border: 1.5px solid var(--border);
-    color: var(--text);
+    @apply w-full px-4 py-2.5 text-sm outline-none transition-shadow;
+    background: #FFFFFF;
+    border: 1.5px solid rgba(14,14,14,0.14);
+    color: #0E0E0E;
   }
   .form-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-dim); }
   .form-input::placeholder { color: var(--text-4); }

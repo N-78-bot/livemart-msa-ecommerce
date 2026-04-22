@@ -119,9 +119,14 @@ export function OrderForm() {
       });
 
       if (!orderRes.ok) {
-        const errBody = await orderRes.json().catch(() => ({}));
-        const msg = errBody?.detail || errBody?.message || '주문 생성 실패';
-        throw new Error(msg);
+        const errText = await orderRes.text().catch(() => '');
+        let msg = '주문 생성 실패';
+        try {
+          const errBody = JSON.parse(errText);
+          msg = errBody?.detail || errBody?.message || errBody?.error || msg;
+        } catch {}
+        console.error('[Order] failed:', orderRes.status, errText);
+        throw new Error(`${orderRes.status}: ${msg}`);
       }
 
       const orderData = await orderRes.json();
