@@ -89,9 +89,12 @@ export function AiChatbot() {
 
       while (true) {
         const { done, value } = await reader.read();
+        console.log('[AI stream read]', { done, bytes: value?.length ?? 0 });
         if (done) break;
 
-        sseBuffer += decoder.decode(value, { stream: true });
+        const chunk = decoder.decode(value, { stream: true });
+        console.log('[AI stream chunk]', JSON.stringify(chunk));
+        sseBuffer += chunk;
 
         // 완성된 SSE 라인만 처리 (개행 기준 분리)
         const lines = sseBuffer.split('\n');
@@ -125,6 +128,7 @@ export function AiChatbot() {
         }
       }
 
+      console.log('[AI stream done] accumulated:', JSON.stringify(accumulated));
       // 스트림 종료 후 content가 비어있거나 에러이면 에러 메시지로 교체
       if (!accumulated || accumulated === '__ERROR__') {
         setMessages(prev => {

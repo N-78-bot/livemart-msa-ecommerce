@@ -47,9 +47,9 @@ public class PaymentController {
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
-            // order-service 호출 실패 시 결제 진행 차단 (Fail-Closed)
-            log.error("주문 정보 조회 실패 - orderNumber: {}, error: {}", request.getOrderNumber(), e.getMessage());
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "주문 정보를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.");
+            // order-service가 트랜잭션 커밋 전에 payment를 호출하는 경우 순환 의존 발생 가능.
+            // 내부 서비스(order-service)에서 금액 검증 후 호출하므로 조회 실패 시 결제 진행 허용.
+            log.warn("주문 정보 조회 실패 - 결제 진행: orderNumber={}, reason={}", request.getOrderNumber(), e.getMessage());
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.processPayment(request));

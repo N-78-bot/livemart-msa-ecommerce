@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@FeignClient(name = "PAYMENT-SERVICE", fallbackFactory = PaymentFeignClientFallbackFactory.class)
+@FeignClient(name = "payment-service", url = "${service.payment-url:http://payment-service:8089}", fallbackFactory = PaymentFeignClientFallbackFactory.class)
 public interface PaymentFeignClient {
 
     @PostMapping("/api/v1/payments")

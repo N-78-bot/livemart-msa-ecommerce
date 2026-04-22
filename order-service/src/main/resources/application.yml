@@ -225,6 +225,11 @@ eureka:
     register-with-eureka: false
     fetch-registry: false
 
+service:
+  product-url: ${PRODUCT_SERVICE_URL:http://product-service:8086}
+  payment-url: ${PAYMENT_SERVICE_URL:http://payment-service:8089}
+  inventory-url: ${INVENTORY_SERVICE_URL:http://inventory-service:8088}
+
 logging:
   level:
     com.netflix.discovery: ERROR

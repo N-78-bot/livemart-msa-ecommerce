@@ -128,6 +128,9 @@ eureka:
     register-with-eureka: false
     fetch-registry: false
 
+service:
+  order-url: ${ORDER_SERVICE_URL:http://order-service:8087}
+
 logging:
   level:
     com.netflix.discovery: ERROR
