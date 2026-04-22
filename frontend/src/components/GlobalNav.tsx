@@ -229,7 +229,9 @@ function useDarkMode() {
   useEffect(() => {
     const stored = localStorage.getItem('livemart-theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setIsDark(stored === 'dark' || (!stored && prefersDark));
+    const shouldBeDark = stored === 'dark' || (!stored && prefersDark);
+    setIsDark(shouldBeDark);
+    document.documentElement.classList.toggle('dark', shouldBeDark);
   }, []);
 
   const toggle = useCallback(() => {

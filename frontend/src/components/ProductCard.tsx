@@ -30,7 +30,7 @@ function getOriginal(price: number, d: number): number {
 /* ── Skeleton ── */
 export function ProductCardSkeleton() {
   return (
-    <div className="bg-white overflow-hidden" style={{ border: '1px solid #E8E5DB' }}>
+    <div className="overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-2)' }}>
       <div
         className="aspect-square"
         style={{
@@ -88,9 +88,10 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div
-      className="bg-white cursor-pointer group flex flex-col overflow-hidden"
+      className="cursor-pointer group flex flex-col overflow-hidden"
       style={{
-        border: `1px solid ${hovered ? '#D0CCC4' : '#E8E5DB'}`,
+        background: 'var(--bg-card)',
+        border: `1px solid ${hovered ? 'var(--border)' : 'var(--border-2)'}`,
         transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
         boxShadow: hovered ? '0 14px 40px rgba(14,12,10,0.12), 0 2px 8px rgba(14,12,10,0.06)' : '0 1px 3px rgba(14,12,10,0.04)',
         transition: 'transform 0.28s cubic-bezier(0.22,1,0.36,1), box-shadow 0.28s cubic-bezier(0.22,1,0.36,1), border-color 0.2s',
@@ -101,7 +102,7 @@ export function ProductCard({ product }: ProductCardProps) {
       onClick={() => router.push(`/products/${product.id}`)}
     >
       {/* ── IMAGE ── */}
-      <div className="relative aspect-square overflow-hidden" style={{ background: '#F5F4F0' }}>
+      <div className="relative aspect-square overflow-hidden" style={{ background: 'var(--bg-warm)' }}>
         {/* Skeleton */}
         {!imgLoaded && !imgErr && product.imageUrl && (
           <div
@@ -202,8 +203,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
         {/* Wishlist button */}
         <button
-          className="absolute top-2 right-2 w-8 h-8 bg-white flex items-center justify-center transition-all"
+          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center transition-all"
           style={{
+            background: 'var(--bg-card)',
             boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
             opacity: hovered || wishlisted ? 1 : 0,
             transform: wishAnim ? 'scale(1.4)' : 'scale(1)',
@@ -237,14 +239,14 @@ export function ProductCard({ product }: ProductCardProps) {
       {/* ── PRODUCT INFO ── */}
       <div className="p-3.5 flex flex-col flex-1">
         {product.category && (
-          <span className="text-[10px] uppercase tracking-[0.14em] mb-1.5 font-bold" style={{ color: '#AEAEAE' }}>
+          <span className="text-[10px] uppercase tracking-[0.14em] mb-1.5 font-bold" style={{ color: 'var(--text-4)' }}>
             {product.category}
           </span>
         )}
 
         <h3
           className="line-clamp-2 mb-2 flex-1 leading-snug"
-          style={{ fontSize: '12.5px', fontWeight: 500, color: '#2A2A2A', wordBreak: 'keep-all' }}
+          style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--text-2)', wordBreak: 'keep-all' }}
         >
           {product.name}
         </h3>
@@ -264,13 +266,13 @@ export function ProductCard({ product }: ProductCardProps) {
               className="font-bebas tabular-nums leading-none"
               style={{
                 fontSize: 'clamp(1.2rem, 2.5vw, 1.5rem)',
-                color: '#0E0E0E',
+                color: 'var(--text)',
                 letterSpacing: '0.01em',
               }}
             >
               {product.price.toLocaleString()}
             </span>
-            <span className="text-xs mb-0.5" style={{ color: '#6E6E6E' }}>원</span>
+            <span className="text-xs mb-0.5" style={{ color: 'var(--text-3)' }}>원</span>
           </div>
         </div>
 
@@ -289,7 +291,7 @@ export function ProductCard({ product }: ProductCardProps) {
           disabled={outOfStock}
           className="w-full py-2.5 flex items-center justify-center gap-1.5 font-black text-[11px] tracking-[0.08em] uppercase transition-all duration-250"
           style={{
-            background: outOfStock ? '#F0EEE7' : cartAdded ? '#00A854' : '#0A0A0A',
+            background: outOfStock ? 'var(--bg-warm)' : cartAdded ? '#00A854' : 'var(--bg-dark)',
             color: outOfStock ? '#C0BDB5' : '#FFFFFF',
             cursor: outOfStock ? 'not-allowed' : 'pointer',
             transition: 'background 0.3s ease, transform 0.15s ease',
