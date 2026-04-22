@@ -53,3 +53,32 @@ eureka:
 spring.cloud.inetutils.timeout-seconds: 1
 logging.level.com.netflix.discovery: ERROR
 logging.level.com.netflix.eureka: ERROR
+
+---
+# ── Render / Docker Compose 프로파일 ─────────────────────────────
+spring:
+  config:
+    activate:
+      on-profile: "render"
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  flyway:
+    enabled: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+
+server:
+  port: ${PORT:8087}
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+logging:
+  level:
+    com.netflix.discovery: ERROR
+    com.netflix.eureka: ERROR

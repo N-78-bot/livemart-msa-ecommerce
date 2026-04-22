@@ -63,7 +63,7 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
 
     // 엔드포인트별 Rate Limit 설정 (window_ms, max_requests)
     private static final Map<String, long[]> ENDPOINT_LIMITS = Map.of(
-        "POST:/api/orders",          new long[]{60_000L, 10L},   // 10 req/min
+        "POST:/api/orders",          new long[]{60_000L, 30L},   // 30 req/min
         "POST:/api/payments",        new long[]{60_000L, 5L},    // 5 req/min
         "POST:/api/auth/login",      new long[]{60_000L, 10L},   // 10 req/min (IP)
         "GET:/api/products/search",  new long[]{60_000L, 100L},  // 100 req/min
@@ -269,7 +269,8 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
         return path.startsWith("/actuator")
             || path.startsWith("/health")
             || path.startsWith("/swagger")
-            || path.startsWith("/v3/api-docs");
+            || path.startsWith("/v3/api-docs")
+            || path.startsWith("/api/analytics");   // Web Vitals 수집 — 클라이언트가 빈번히 호출
     }
 
     @SuppressWarnings("unchecked")
