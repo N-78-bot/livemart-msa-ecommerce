@@ -6,7 +6,8 @@ RUN chmod +x ./gradlew && ./gradlew :analytics-service:bootJar -x test --no-daem
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN apk add --no-cache libstdc++ && \
+    addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY --from=build /app/analytics-service/build/libs/analytics-service-2.0.0.jar app.jar
 RUN chown appuser:appgroup app.jar
