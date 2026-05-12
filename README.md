@@ -8,7 +8,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> Java 21 + Spring Boot 3.3 + Next.js 15로 구현한 MSA 이커머스 포트폴리오 프로젝트.
+> Java 21 + Spring Boot 3.4 + Next.js 15로 구현한 MSA 이커머스 포트폴리오 프로젝트.
 > Saga, Outbox, CQRS, Event Sourcing 등 분산 시스템 패턴을 직접 구현했습니다.
 
 ---
@@ -297,11 +297,6 @@ curl http://<GCP_VM_IP>:8888/actuator/health
 - PostgreSQL: Neon (서비스별 독립 DB)
 - Redis: Upstash (TLS, rediss://)
 
-### 테스트 계정
-
-로컬 실행 후 회원가입 또는 `.env`의 초기 계정 설정을 통해 접근하세요.
-데모 계정이 필요하면 [Issues](https://github.com/parkmin-je/livemart-msa-ecommerce/issues)로 문의해주세요.
-
 ### 포트 맵
 
 | 서비스 | 로컬 포트 |
@@ -341,7 +336,7 @@ k6 run tests/load/k6-order-flow.js
 | [ADR-003](docs/adr/ADR-003-grpc-product-query.md) | 서비스 간 통신 | gRPC (HTTP/2 + Protobuf) | REST 대비 멀티플렉싱·직렬화 효율 |
 | [ADR-004](docs/adr/ADR-004-redis-caching-strategy.md) | 캐싱 전략 | Cache-Aside | 캐시 히트 최대화, 쓰기 성능 유지 |
 | [ADR-005](docs/adr/ADR-005-elasticsearch-search.md) | 검색 엔진 | Elasticsearch + nori | 한글 형태소 분석·퍼지 검색 |
-| [ADR-006](docs/adr/ADR-006-istio-service-mesh.md) | 서비스 메시 | Istio mTLS STRICT | 서비스 간 자동 암호화·트래픽 제어 |
+| [ADR-006](docs/adr/ADR-006-istio-service-mesh.md) | 서비스 메시 | Istio mTLS STRICT *(Proposed)* | 현재 Resilience4j로 대체 구현, k8s 전환 시 적용 예정 |
 
 ---
 
