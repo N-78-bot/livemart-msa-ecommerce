@@ -59,7 +59,7 @@ jobs:
       github.event.inputs.scenario == 'all' ||
       github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: K6 설치
         run: |
@@ -123,7 +123,7 @@ jobs:
       github.event.inputs.scenario == 'order-flow' ||
       github.event.inputs.scenario == 'all'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: K6 설치
         run: |
@@ -172,7 +172,7 @@ jobs:
       github.event.inputs.scenario == 'flash-sale' ||
       github.event.inputs.scenario == 'all'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: K6 설치
         run: |
@@ -209,7 +209,7 @@ jobs:
       github.event.inputs.scenario == 'search-load' ||
       github.event.inputs.scenario == 'all'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: K6 설치
         run: |

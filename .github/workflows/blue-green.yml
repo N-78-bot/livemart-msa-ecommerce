@@ -55,7 +55,7 @@ jobs:
       image_tag: ${{ steps.set_tag.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set image tag
         id: set_tag
@@ -106,7 +106,7 @@ jobs:
       IMAGE_TAG: ${{ needs.pre-deploy-checks.outputs.image_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configure kubectl
         uses: azure/k8s-set-context@v4
@@ -180,7 +180,7 @@ jobs:
       NEW_SLOT: ${{ needs.pre-deploy-checks.outputs.new_slot }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup k6
         uses: grafana/setup-k6-action@v1

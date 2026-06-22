@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # 전체 히스토리 스캔
 
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Run Trivy filesystem scan
         uses: aquasecurity/trivy-action@master
@@ -65,7 +65,7 @@ jobs:
       security-events: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
@@ -141,7 +141,7 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'pull_request'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: ZAP Baseline Scan (API Gateway)
         uses: zaproxy/action-baseline@v0.15.0
@@ -166,7 +166,7 @@ jobs:
     if: github.event_name != 'schedule'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # 전체 히스토리 (SonarCloud 블레임 분석용)
 
