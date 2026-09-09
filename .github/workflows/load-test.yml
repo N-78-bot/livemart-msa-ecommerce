@@ -1,14 +1,6 @@
 name: Load Test — K6 Performance CI
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'api-gateway/**'
-      - 'product-service/**'
-      - 'order-service/**'
-      - 'payment-service/**'
-      - 'k6/**'
   workflow_dispatch:
     inputs:
       scenario:
@@ -56,8 +48,7 @@ jobs:
     needs: preflight
     if: |
       github.event.inputs.scenario == 'product-load' ||
-      github.event.inputs.scenario == 'all' ||
-      github.event_name == 'pull_request'
+      github.event.inputs.scenario == 'all'
     steps:
       - uses: actions/checkout@v4
 
@@ -242,59 +233,6 @@ jobs:
           path: k6/results/
           retention-days: 30
 
-  # ── PR 결과 코멘트 ────────────────────────────────────────────
-  comment-results:
-    name: PR 결과 코멘트
-    runs-on: ubuntu-latest
-    needs: [load-test-products]
-    if: github.event_name == 'pull_request' && always()
-    permissions:
-      pull-requests: write
-    steps:
-      - name: 결과 다운로드
-        uses: actions/download-artifact@v4
-        with:
-          name: k6-product-load-results
-          path: k6/results/
-        continue-on-error: true
-
-      - name: PR 코멘트 작성
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const fs = require('fs');
-            let body = '## K6 부하 테스트 결과\n\n';
-
-            try {
-              const summary = JSON.parse(fs.readFileSync('k6/results/product-load-summary.json', 'utf8'));
-              const m = summary.metrics || {};
-
-              const p95 = Math.round(m.http_req_duration?.values?.['p(95)'] || 0);
-              const p99 = Math.round(m.http_req_duration?.values?.['p(99)'] || 0);
-              const errorRate = ((m.http_req_failed?.values?.rate || 0) * 100).toFixed(3);
-              const totalReqs = m.http_reqs?.values?.count || 0;
-
-              const p95Status = p95 < 2000 ? '✅' : '❌';
-              const errStatus = parseFloat(errorRate) < 1 ? '✅' : '❌';
-
-              body += `### 상품 API 부하 테스트 (100→500 VU, 5분)\n`;
-              body += `| 지표 | 값 | 임계값 | 상태 |\n`;
-              body += `|------|-----|--------|------|\n`;
-              body += `| P95 응답시간 | ${p95}ms | < 2000ms | ${p95Status} |\n`;
-              body += `| P99 응답시간 | ${p99}ms | < 5000ms | ${p99 < 5000 ? '✅' : '❌'} |\n`;
-              body += `| 에러율 | ${errorRate}% | < 1% | ${errStatus} |\n`;
-              body += `| 총 요청 | ${totalReqs} | - | - |\n`;
-            } catch (e) {
-              body += '> 결과 파일을 읽을 수 없습니다. 로컬 인프라가 실행 중이지 않으면 테스트가 건너뛰어집니다.\n';
-            }
-
-            body += '\n---\n';
-            body += `*테스트 실행 시각: ${new Date().toISOString()}*\n`;
-            body += `*워크플로우: [${context.runId}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})*\n`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body,
-            });
+  # ── PR 결과 코멘트는 workflow_dispatch 전용 전환으로 제거됨 ──────
+  # (PR 컨텍스트가 없는 수동 실행에서는 댓글을 달 대상(issue.number)이 없음.
+  #  실행 결과는 위 각 잡의 Step Summary와 업로드된 아티팩트로 확인)

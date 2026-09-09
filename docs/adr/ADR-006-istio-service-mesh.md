@@ -1,12 +1,15 @@
 # ADR-006: 서비스 메쉬로 Istio 채택 (East-West mTLS + Traffic Management)
 
-- **상태**: 검토 중 (Proposed) — GCP Docker Compose 환경에서는 Resilience4j로 Circuit Breaker 대체 구현
+- **상태**: 미채택 (Rejected) — 실제 배포는 Vercel + Render(단일 컨테이너 서비스)로,
+  K8s 클러스터 자체가 존재하지 않아 Istio를 적용할 대상이 없음
 - **날짜**: 2026-03-17
 - **결정자**: 인프라 팀
 
-> **현재 상태 참고:** 포트폴리오 환경(GCP VM + Docker Compose)에서는 Istio 대신
+> **현재 상태 참고:** 실제 배포 환경(Vercel + Render 무료 플랜)에서는 Istio 대신
 > Resilience4j Circuit Breaker + Spring Cloud Gateway Rate Limiting으로 동일 목표를 달성.
-> Kubernetes 클러스터 전환 시 Istio sidecar injection 적용 예정.
+> 이 문서에 설계된 `k8s/base/istio-mesh-config.yml` 등 K8s 매니페스트는 실제로
+> 프로비저닝된 적 없는 설계 문서로, 레포 정리 과정에서 함께 삭제됨. 향후 실제 K8s
+> 클러스터로 전환할 경우에만 재검토 대상.
 
 ## 배경 (Context)
 

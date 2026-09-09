@@ -9,6 +9,8 @@ services:
     envVars:
       - key: CORS_ALLOWED_ORIGINS
         value: https://livemart-parkmin-jes-projects.vercel.app
+      - key: JWT_SECRET
+        sync: false
       - key: REDIS_URL
         sync: false
       - key: USER_SERVICE_URL
@@ -22,6 +24,10 @@ services:
       - key: AI_SERVICE_URL
         sync: false
       - key: INVENTORY_SERVICE_URL
+        sync: false
+      - key: NOTIFICATION_SERVICE_URL
+        sync: false
+      - key: ANALYTICS_SERVICE_URL
         sync: false
 
   - type: web
@@ -146,4 +152,34 @@ services:
       - key: DB_PASSWORD
         sync: false
       - key: REDIS_URL
+        sync: false
+
+  - type: web
+    name: livemart-notification-service
+    env: docker
+    dockerfilePath: ./notification-service/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: REDIS_URL
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+  - type: web
+    name: livemart-analytics-service
+    env: docker
+    dockerfilePath: ./analytics-service/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
         sync: false
