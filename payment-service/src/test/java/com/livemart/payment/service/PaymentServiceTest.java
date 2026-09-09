@@ -38,10 +38,13 @@ class PaymentServiceTest {
     @SuppressWarnings("unchecked")
     private KafkaTemplate<String, PaymentEvent> kafkaTemplate;
 
+    @Mock
+    private TossPaymentClient tossPaymentClient;
+
     @BeforeEach
     void setUp() {
         paymentService = new PaymentService(paymentRepository, eventRepository, kafkaTemplate,
-                Optional.of(new ObjectMapper()));
+                Optional.of(new ObjectMapper()), tossPaymentClient);
     }
 
     @Nested

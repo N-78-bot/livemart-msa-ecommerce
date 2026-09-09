@@ -38,13 +38,16 @@ class PaymentServiceComprehensiveTest {
     @SuppressWarnings("unchecked")
     private KafkaTemplate<String, PaymentEvent> kafkaTemplate;
 
+    @Mock
+    private TossPaymentClient tossPaymentClient;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
         // Optional<ObjectMapper>를 직접 주입하여 NPE 방지
         paymentService = new PaymentService(paymentRepository, eventRepository, kafkaTemplate,
-                Optional.of(objectMapper));
+                Optional.of(objectMapper), tossPaymentClient);
     }
 
     // ──────────────────────────────────────────────────────────────────
