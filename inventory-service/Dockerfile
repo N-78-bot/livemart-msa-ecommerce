@@ -7,4 +7,4 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/inventory-service/build/libs/inventory-service-2.0.0.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["/bin/sh", "-c", "java --enable-preview -jar app.jar --spring.profiles.active=render 2>&1"]
+ENTRYPOINT ["/bin/sh", "-c", "java --enable-preview -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -jar app.jar --spring.profiles.active=render 2>&1"]

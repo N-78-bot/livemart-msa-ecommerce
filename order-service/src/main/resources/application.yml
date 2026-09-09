@@ -153,54 +153,6 @@ logging.level.com.netflix.discovery: ERROR
 logging.level.com.netflix.eureka: ERROR
 
 ---
-# ── Railway 클라우드 프로파일 ────────────────────────────────
-spring:
-  config:
-    activate:
-      on-profile: "railway"
-  datasource:
-    url: jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}
-    username: ${PGUSER}
-    password: ${PGPASSWORD}
-  data:
-    redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT:6379}
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-
-server:
-  port: ${PORT:8083}
-
-service:
-  product-url: ${PRODUCT_SERVICE_URL:lb://product-service}
-  payment-url: ${PAYMENT_SERVICE_URL:lb://payment-service}
-  inventory-url: ${INVENTORY_SERVICE_URL:lb://inventory-service}
-
-grpc:
-  client:
-    product-grpc-server:
-      address: ${PRODUCT_GRPC_URL:static://product-service.railway.internal:9095}
-      negotiation-type: plaintext
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://eureka-server.railway.internal:8761/eureka/}
-    initial-instance-info-replication-interval-seconds: 15
-    registry-fetch-interval-seconds: 15
-  instance:
-    prefer-ip-address: false
-    hostname: ${RAILWAY_PRIVATE_DOMAIN:order-service.railway.internal}
-    non-secure-port: ${PORT:8083}
-    non-secure-port-enabled: true
-
-logging:
-  level:
-    com.netflix.discovery: ERROR
-    com.netflix.eureka: ERROR
-
----
 # ── Render 무료 클라우드 프로파일 ─────────────────────────────
 spring:
   config:

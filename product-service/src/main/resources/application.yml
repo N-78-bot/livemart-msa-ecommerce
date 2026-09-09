@@ -116,47 +116,6 @@ logging.level.com.netflix.discovery: ERROR
 logging.level.com.netflix.eureka: ERROR
 
 ---
-# ── Railway 클라우드 프로파일 ────────────────────────────────
-spring:
-  config:
-    activate:
-      on-profile: "railway"
-  datasource:
-    url: jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}
-    username: ${PGUSER}
-    password: ${PGPASSWORD}
-  data:
-    redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT:6379}
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-
-server:
-  port: ${PORT:8082}
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://eureka-server.railway.internal:8761/eureka/}
-    initial-instance-info-replication-interval-seconds: 15
-    registry-fetch-interval-seconds: 15
-  instance:
-    prefer-ip-address: false
-    hostname: ${RAILWAY_PRIVATE_DOMAIN:product-service.railway.internal}
-    non-secure-port: ${PORT:8082}
-    non-secure-port-enabled: true
-
-grpc:
-  server:
-    port: -1  # Railway에서는 gRPC 비활성화 (HTTP API만 사용)
-
-logging:
-  level:
-    com.netflix.discovery: ERROR
-    com.netflix.eureka: ERROR
-
----
 # ── Render 무료 클라우드 프로파일 ─────────────────────────────
 spring:
   config:
