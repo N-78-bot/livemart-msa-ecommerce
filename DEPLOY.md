@@ -46,55 +46,61 @@ NEXT_PUBLIC_API_URL=https://your-backend-url.com
 
 ---
 
-## Railway 백엔드 배포 (무료 $5/월 크레딧)
+## Render 백엔드 배포 (무료 플랜)
 
-### 추천 배포 순서 (최소 데모용)
+실제 운영 중인 백엔드는 Railway가 아니라 **Render**입니다. 레포 루트의 `render.yaml`이
+[Render Blueprint](https://render.com/docs/blueprint-spec) 형식으로 9개 서비스를 정의합니다:
+`api-gateway`, `user-service`, `product-service`, `order-service`, `payment-service`,
+`ai-service`, `inventory-service`, `notification-service`, `analytics-service`
+(각 서비스는 `Dockerfile`로 빌드되며 `dockerContext: .` — 레포 루트 기준으로 빌드됩니다).
 
-서비스 간 의존성을 고려해 아래 순서로 배포합니다:
+`eureka-server`는 Render에 배포하지 않습니다. `render` 프로파일에서는 모든 서비스가
+Eureka 없이 서로의 URL을 환경변수(`USER_SERVICE_URL`, `PRODUCT_SERVICE_URL` 등)로
+직접 라우팅합니다 — Render 서비스 간에는 Eureka 같은 내부 서비스 디스커버리가 없기 때문입니다.
 
-1. **PostgreSQL** — Railway 대시보드 > New > Database > Add PostgreSQL
-2. **Redis** — Railway 대시보드 > New > Database > Add Redis
-3. **user-service** — 회원가입/로그인 (JWT 발급)
-4. **product-service** — 상품 목록 조회
-5. **api-gateway** — 외부 진입점, 라우팅 처리
+### 1단계: Blueprint로 서비스 생성
 
-### railway.toml (각 서비스 루트에 생성)
+1. Render 대시보드 > **New > Blueprint** > 이 저장소 선택
+2. `render.yaml`을 인식해 9개 서비스가 한 번에 생성됨 (모두 `plan: free`)
+3. 각 서비스는 `healthCheckPath: /actuator/health`로 헬스체크됨
 
-각 마이크로서비스의 루트 디렉토리에 `railway.toml` 파일을 생성합니다.
+> Render 무료 플랜은 서비스당 512MB RAM, 15분 무활동 시 슬립 — 콜드스타트 시 첫 요청이
+> 느릴 수 있습니다. 각 서비스 Dockerfile에는 `-XX:MaxRAMPercentage=75.0` 등 512MB 환경에
+> 맞춘 JVM 힙 튜닝이 되어 있습니다.
 
-```toml
-[build]
-builder = "NIXPACKS"
-buildCommand = "../gradlew :서비스명:bootJar -x test"
+### 2단계: 외부 관리형 DB/Redis 준비 (Render는 무료 Postgres/Redis를 제공하지 않음)
 
-[deploy]
-startCommand = "java -jar build/libs/서비스명-2.0.0.jar"
-healthcheckPath = "/actuator/health"
-healthcheckTimeout = 300
-```
+`render.yaml`의 `DATABASE_URL`, `DB_USERNAME`, `DB_PASSWORD`, `REDIS_URL` 등은 전부
+`sync: false`로 선언되어 있어 **Render가 자동 생성하지 않고, 직접 값을 넣어야 합니다.**
 
-예시 (user-service):
-```toml
-[build]
-builder = "NIXPACKS"
-buildCommand = "../gradlew :user-service:bootJar -x test"
+- **Postgres**: [Neon](https://neon.tech) 무료 플랜에서 서비스별로 DB를 만들어
+  `DATABASE_URL`/`DB_USERNAME`/`DB_PASSWORD`로 연결 (user/product/order/payment/
+  inventory/analytics-service 각각 별도 DB 권장)
+- **Redis**: [Upstash](https://upstash.com) 무료 플랜에서 만들어 `REDIS_URL`로 연결
+  (api-gateway/user/product/order/ai/notification-service가 사용)
 
-[deploy]
-startCommand = "java -jar build/libs/user-service-2.0.0.jar"
-healthcheckPath = "/actuator/health"
-healthcheckTimeout = 300
-```
+### 3단계: 서비스별 환경변수 (Render 대시보드 > 서비스 > Environment)
 
-### 환경변수 (Railway 대시보드 > 서비스 > Variables)
+`render.yaml`에 `sync: false`로 선언된 항목은 대시보드에서 직접 값을 입력해야 합니다.
+서비스별로 필요한 값은 `render.yaml`을 참고하되, 특히 아래는 빠뜨리면 안 됩니다:
 
-```
-SPRING_DATASOURCE_URL=${{Postgres.DATABASE_URL}}
-SPRING_REDIS_HOST=${{Redis.REDIS_HOST}}
-SPRING_REDIS_PORT=${{Redis.REDIS_PORT}}
-JWT_SECRET=your-secret-최소32자이상으로설정하세요
-SPRING_PROFILES_ACTIVE=prod
-EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-service.railway.internal:8761/eureka/
-```
+| 서비스 | 필수 env | 비고 |
+|--------|----------|------|
+| api-gateway | `JWT_SECRET` | user/order-service와 **동일한 값**이어야 함 (JWT 서명 검증) |
+| user-service | `JWT_SECRET`, `SMTP_USERNAME`/`PASSWORD`, OAuth2 클라이언트 ID/Secret | 소셜 로그인 미사용 시 OAuth2 값은 비워도 됨 |
+| payment-service | `TOSS_SECRET_KEY` | `TOSS_CLIENT_KEY`는 테스트 키가 이미 커밋되어 있음 |
+| notification-service | `MAIL_USERNAME`, `MAIL_PASSWORD` | Gmail 앱 비밀번호 사용 권장 |
+
+> **알려진 제약:** Kafka와 Elasticsearch는 Render에 관리형 서비스가 없어 현재 프로덕션에서는
+> 연결되지 않습니다 (기본값인 `localhost:9092`/`localhost:9200`으로 접속을 시도하다 실패).
+> Saga/Outbox 이벤트 흐름과 상품 검색은 로컬 `docker-compose` 환경(Kafka/ES 포함)에서
+> 시연하는 것을 권장합니다. Render 프로파일에서 이 의존성을 정식으로 끄거나 외부 관리형
+> Kafka/ES(Upstash Kafka, Bonsai 등)로 교체하는 작업은 별도로 진행 예정입니다.
+
+### 4단계: 배포 확인
+
+`https://<서비스명>.onrender.com/actuator/health`가 `{"status":"UP"}`을 반환하는지
+서비스별로 확인합니다. api-gateway가 정상이어야 프론트엔드(Vercel)에서 API 호출이 됩니다.
 
 ---
 
@@ -104,7 +110,7 @@ EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-service.railway.internal:876
 
 ```bash
 # 1. 인프라 (PostgreSQL, Redis, Kafka 등) Docker로 실행
-docker-compose -f docker-compose.infra.yml up -d
+docker-compose -f docker-compose-infra.yml up -d
 
 # 2. 서비스 순서대로 실행 (각각 새 터미널에서)
 ./gradlew :eureka-server:bootRun
